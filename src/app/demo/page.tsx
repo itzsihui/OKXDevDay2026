@@ -14,7 +14,7 @@ export default function DemoPage() {
   const [log, setLog] = useState<Line[]>([
     {
       role: "pitch",
-      text: "90s script: merchant publish → x402 402→200 → VISA card rail. Open /onboard and /buyer for interactive panes.",
+      text: "90s script: intent → route liquidity → x402 settle → ownership. Open /buyer and /buyer/ownership for the interactive loop.",
     },
   ]);
   const [explorerUrl, setExplorerUrl] = useState<string | null>(null);

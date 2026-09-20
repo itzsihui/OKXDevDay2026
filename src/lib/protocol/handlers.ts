@@ -1,4 +1,5 @@
 import { config, explorerTx, fromAtomic, toAtomic } from "@/lib/config";
+import { computeFeeAtomic, pointsFromFeeAtomic } from "@/lib/ownership-math";
 import { renderAgentCard } from "@/lib/protocol/agent-card";
 import { renderCatalog } from "@/lib/protocol/catalog";
 import { emit } from "@/lib/protocol/events";
@@ -92,6 +93,8 @@ export async function handleBuy(slug: string, request: Request) {
     quantity?: number;
     orderId?: string;
     buyerUid?: string;
+    referrerId?: string;
+    swapTxHash?: string;
   };
   const sku =
     store.skus.find((item) => item.id === body.skuId) ?? store.skus[0];
@@ -193,6 +196,8 @@ export async function handleBuy(slug: string, request: Request) {
   }
 
   const txHash = verified.txHash;
+  const feeAtomic = computeFeeAtomic(amountAtomic, config.protocolFeeBps);
+  const ownershipPoints = pointsFromFeeAtomic(feeAtomic);
   const paid: Order = {
     id: orderId,
     slug,
@@ -207,6 +212,13 @@ export async function handleBuy(slug: string, request: Request) {
       body.buyerUid?.trim() || existing?.buyerUid || undefined,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
     paidAt: new Date().toISOString(),
+    grossAtomic: amountAtomic,
+    feeAtomic,
+    netToMerchantAtomic: amountAtomic,
+    protocolFeeBps: config.protocolFeeBps,
+    referrerId: body.referrerId?.trim() || undefined,
+    swapTxHash: body.swapTxHash?.trim() || undefined,
+    ownershipPoints,
   };
   await repo.putOrder(paid);
   const skuRef = store.skus.find((item) => item.id === sku.id);
@@ -344,6 +356,17 @@ function receipt(order: Order, store?: StoreRecord | null) {
       order.explorerUrl ?? (order.txHash ? explorerTx(order.txHash) : undefined),
     mandate: order.mandate,
     paidAt: order.paidAt,
+    grossAtomic: order.grossAtomic || order.amountAtomic,
+    feeAtomic: order.feeAtomic,
+    netToMerchantAtomic: order.netToMerchantAtomic || order.amountAtomic,
+    protocolFeeBps: order.protocolFeeBps ?? config.protocolFeeBps,
+    treasuryAddress: config.treasuryAddress,
+    referrerId: order.referrerId,
+    swapTxHash: order.swapTxHash,
+    swapExplorerUrl: order.swapTxHash
+      ? explorerTx(order.swapTxHash)
+      : undefined,
+    ownershipPoints: order.ownershipPoints,
     merchant: store
       ? {
           displayName: store.merchantDisplayName,

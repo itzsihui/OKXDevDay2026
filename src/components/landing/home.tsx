@@ -24,20 +24,15 @@ const JEANS_IMG =
   "https://images.unsplash.com/photo-1542272604-787c3835535d?w=900&h=900&fit=crop&auto=format";
 
 const TURNS = [
-  { who: "You", text: "Going on a date — find me a set." },
+  { who: "You", text: "Buy this limited drop — pay from my wallet." },
   {
     who: "Agent",
-    text: "Date night. Want a full set (top + bottoms), or just one piece?",
+    text: "Matched the drop. Checking USDT0 — will route OKB → USDT0 on X Layer if short.",
   },
-  { who: "You", text: "Full set." },
+  { who: "You", text: "Authorize." },
   {
     who: "Agent",
-    text: "Pulled an Oxford Shirt and Selvedge Jeans across sellers. Tap a card when you're ready.",
-  },
-  { who: "You", text: "Pay with USDT0." },
-  {
-    who: "Agent",
-    text: "x402 quote ready. I will not settle until you authorize.",
+    text: "Routed liquidity, settled x402, credited network ownership.",
   },
 ];
 
@@ -132,16 +127,16 @@ export function LandingHome() {
                   "landing-rise font-[family-name:var(--font-syne)] text-[clamp(2rem,5vw,3.5rem)] font-semibold leading-[1.12] tracking-tight text-[var(--landing-fog)] pb-1",
                 )}
               >
-                Go agent-ready. Publish once. Any agent can shop you.
+                Intent to ownership — settle on X Layer.
               </h1>
               <p
                 className={cn(
                   "landing-rise landing-rise-delay-1 mt-4 max-w-[42ch] text-base leading-relaxed text-[var(--landing-fog)]/70",
                 )}
               >
-                Talk your catalog live — open registry and /api/search, not
-                locked inside ChatGPT or Claude. Buyers settle USDT0 in chat via
-                x402. Start as a seller below.
+                Say what you want. Borneo routes wallet liquidity into USDT0,
+                settles via x402, and credits network ownership — open to any
+                HTTP agent, not locked inside two chat apps.
               </p>
             </div>
           </main>
@@ -179,8 +174,8 @@ export function LandingHome() {
                 Log in as buyer
               </h2>
               <p className="mt-2 max-w-[36ch] text-sm leading-relaxed text-[var(--landing-fog)]/60">
-                Ranks via /api/search — same endpoint agents use — then settles
-                USDT0 on X Layer after you authorize.
+                Intent in chat — routes liquidity when needed, settles USDT0 on
+                X Layer after you authorize, earns network ownership.
               </p>
               <span className="mt-6 inline-flex text-sm font-medium text-[var(--landing-jade)] group-hover:underline">
                 Continue to Shop

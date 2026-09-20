@@ -14,7 +14,7 @@ export function renderCatalog(store: StoreRecord, origin: string) {
     network: config.network,
     rails: ["x402", "straitsx-virtual-card"],
     updatedAt: store.updatedAt || store.createdAt,
-    products: store.skus.map((sku) => ({
+            products: store.skus.map((sku) => ({
       id: sku.id,
       title: sku.title,
       description: { type: "plain", content: sku.description },
@@ -26,6 +26,14 @@ export function renderCatalog(store: StoreRecord, origin: string) {
             size: sku.attrs.size,
             material: sku.attrs.material,
             tags: sku.attrs.tags,
+          }
+        : undefined,
+      tokenization: sku.tokenization
+        ? {
+            kind: sku.tokenization.kind,
+            contractAddress: sku.tokenization.contractAddress,
+            underlying: sku.tokenization.underlying,
+            explorerUrl: sku.tokenization.explorerUrl,
           }
         : undefined,
       variants: [

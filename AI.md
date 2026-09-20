@@ -2,17 +2,19 @@
 
 Source of truth for this prototype. Landing copy, demo script, and product decisions should map here.
 
-**Design read:** cinematic product landing for OKX Dev Day judges — open agent commerce on X Layer / Onchain OS (Syne + IBM Plex, jade / ember / ink).
+**Design read:** cinematic product landing for OKX Dev Day judges — intent-native commerce on X Layer / Onchain OS (Syne + IBM Plex, jade / ember / ink).
 
 **Dials:** `DESIGN_VARIANCE: 6` · `MOTION_INTENSITY: 5` · `VISUAL_DENSITY: 4`
+
+**Primary track:** Build a Market
 
 ---
 
 ## Problem
 
-Agent commerce catalogs are walled. Merchants who only list inside a few chat apps are invisible to procurement bots, local LLMs, and personal agents. Settlement should be agent-native: pay-per-call x402 on a production L2 with OKX infrastructure.
+Users hold fragmented assets. Buying merch, tokenized RWAs, or micro-payments usually means manual swaps, gas friction, and separate rails. Agent commerce catalogs are also walled — merchants listing only inside a few chat apps are invisible to the long tail of agents.
 
-**Challenge framing:** Enable any merchant to publish an agent-readable storefront once, let any HTTP agent discover and buy, and settle **USDT0 on X Layer** via **OKX Onchain OS** (Agentic Wallet + Payment SDK / A2MCP).
+**Challenge framing:** An AI shopping agent bridges natural-language intent to **X Layer liquidity routing** and **USDT0 x402 settlement** via OKX Onchain OS, then redistributes protocol upside as **network ownership** so users switch for seamless conversion *and* stake.
 
 ---
 
@@ -20,74 +22,72 @@ Agent commerce catalogs are walled. Merchants who only list inside a few chat ap
 
 | Pillar | What we ship | Live surface |
 |---|---|---|
-| **AI Agent Layer** | Fashion buyer agent — clarify intent, rank via `/api/search`, compare, hand off to pay | `/buyer` |
-| **Merchant access** | Chat onboard: type inventory, CSV, or Shopify URL → published agent storefront | `/onboard` |
-| **Seamless payment** | USDT0 x402 on X Layer (OKX facilitator) + optional Visa-style scoped card in chat | `/buyer` checkout |
-| **Trust / consent** | Preview + authorize; locked quote; catalog text cannot change payee/amount | Consent modal |
+| **AI Agent Layer** | Intent buyer agent — clarify, search, compare, hand off to pay | `/buyer` |
+| **Liquidity routing** | Balance check + OKX DEX quote/execute (native → USDT0) before settle | Consent modal + `/api/liquidity` |
+| **Merchant access** | Chat onboard → published agent storefront (+ RWA desk SKUs) | `/onboard`, `/market` |
+| **Seamless payment** | USDT0 x402 on X Layer (OKX facilitator) + optional Visa rail | `/buyer` checkout |
+| **Ownership flywheel** | Protocol fee bps → ownership points + invite boost | `/buyer/ownership` |
+| **Trust / consent** | Preview + authorize; locked quote; catalog cannot change payee/amount | Consent modal |
 
-Do not claim voice unless we ship it. Category is **fashion / apparel**.
+Do not claim voice unless we ship it. Vertical: fashion + tokenized/RWA demo listings.
 
 ---
 
 ## Demo path (judges)
 
-1. `/` landing: open protocol vs closed catalogs; X Layer settle
-2. `/onboard`: talk a catalog live, publish
-3. `/buyer`: "I want a t-shirt" → compare → pick USDT0 or Visa → authorize
-4. Optional: show `POST /s/{slug}/buy` 402 challenge (A2MCP shape) + Onchain OS MCP tools
+1. `/` landing: fragmented balances → intent → route → settle → own
+2. `/buyer`: "Buy this drop" or "Deploy funds into this asset" → picks (fashion or RWA desk)
+3. Consent: liquidity route preview (USDT0 balance / native → USDT0 plan)
+4. Authorize → x402 settle → explorer receipt → ownership accrual
+5. Optional: `POST /s/{slug}/buy` 402 challenge + `/buyer/ownership` invite loop
 
-Fail-soft: missing `BUYER_PRIVATE_KEY` still shows the 402 challenge. Missing OKX keys fails settle with a clear error.
+Fail-soft: missing `BUYER_PRIVATE_KEY` still shows the 402 challenge. Missing DEX liquidity shows a **plan** route and settles when USDT0 is funded.
 
 ---
 
 ## Architecture (short)
 
-- **Buyer agent:** `/buyer`, `/api/buyer-chat` — discovers via `/llms.txt` + registry, not HTML scraping
-- **Merchant agent:** `/onboard`, `/api/merchant-agent`
-- **Crypto rail:** HTTP 402 → USDT0 on X Layer (`eip155:1952` testnet) → `PAYMENT-SIGNATURE` → OKX facilitator settle
-- **Visa rail:** local scoped-card mandate (StraitsX MCP optional)
+- **Buyer agent:** `/buyer`, `/api/buyer-chat` — discovers via `/llms.txt` + registry
+- **Liquidity:** `/api/liquidity` + `src/lib/liquidity/route.ts` — OKX DEX aggregator
+- **Crypto rail:** HTTP 402 → USDT0 on X Layer → OKX facilitator settle
+- **Ownership:** app-layer fee accrual (merchant still receives full listed USDT0)
 - **Builder tooling:** Onchain OS skills + Cursor MCP (`onchainos mcp`)
 
 ```mermaid
 sequenceDiagram
-  participant Agent
-  participant Buy as POST_buy
+  participant User
+  participant Agent as BuyerAgent
+  participant Route as LiquidityRouter
+  participant Buy as POSTbuy_x402
   participant OKX as OKXFacilitator
   participant XL as XLayer
+  participant Stake as OwnershipLedger
 
-  Agent->>Buy: no payment
-  Buy-->>Agent: 402 PAYMENT-REQUIRED
+  User->>Agent: Intent buy
+  Agent->>Route: Ensure USDT0
+  alt Short USDT0
+    Route->>XL: Swap native to USDT0
+  end
   Agent->>Buy: PAYMENT-SIGNATURE
-  Buy->>OKX: verify + settle
-  OKX->>XL: USDT0 transfer
-  Buy-->>Agent: 200 receipt
+  Buy->>OKX: verify plus settle
+  OKX->>XL: USDT0 to merchant
+  Buy->>Stake: Accrue ownership points
 ```
 
 ---
 
 ## Trust model
 
-1. Buyer sees a **transaction preview** (item, merchant, amount, rail).
+1. Buyer sees a **transaction preview** (item, merchant, amount, route, rail).
 2. Buyer **confirms** (`Authorize purchase`). No confirm, no charge.
 3. x402: payTo + atomic amount must match the locked quote.
-4. Merchant publish: optional EVM wallet proof (MetaMask / private key).
+4. Ownership points are **not** a security — demo network stake from protocol fee narrative.
 5. Protocol log is visible so the handshake is inspectable.
 
 ---
 
 ## Landing page contract
 
-- Shopper: `Shop fashion` → `/buyer`
-- Merchant: `Open a store` → `/onboard`
-
-**Hero:** discover / decide / pay in one conversation on X Layer. Name USDT0 x402 and authorize-before-pay.
-
-**Banned:** protocol-only handshake as the first narrative; filler verbs (unleash, elevate, next-gen).
-
----
-
-## Docs
-
-- [`docs/okx-onchainos.md`](./docs/okx-onchainos.md)
-- [`scripts/setup-xlayer-usdt0.md`](./scripts/setup-xlayer-usdt0.md)
-- [`.agents/skills/okx-devday-resources/SKILL.md`](./.agents/skills/okx-devday-resources/SKILL.md)
+- Shopper: `Shop with Borneo` → `/buyer`
+- Sellers: `Publish a storefront` → `/onboard`
+- Hero thesis: intent → route → settle → own on X Layer

@@ -6,10 +6,10 @@ import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { Reveal } from "@/components/landing/reveal";
 
 const BUYER_PLACEHOLDERS = [
-  "Going on a date — find me a set",
+  "Buy this limited-edition merch drop",
+  "Deploy funds into this tokenized asset",
   "I want a black linen shirt in M",
-  "Need jeans 30x32 and a top to match",
-  "Find me something for dinner, not the gym",
+  "Route my OKB to USDT0 and settle",
   "Authorize USDT0 — show me the locked quote",
 ];
 

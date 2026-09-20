@@ -26,6 +26,10 @@ export async function POST(request: Request) {
 
   const log: Array<{ phase: string; text: string }> = [];
 
+  log.push({
+    phase: "pitch",
+    text: "Intent → route → settle → own on X Layer (Build a Market)",
+  });
   log.push({ phase: "merchant", text: merchantMessage });
   const merchant = await runMerchantAgent({ message: merchantMessage });
   log.push({
@@ -46,10 +50,28 @@ export async function POST(request: Request) {
   let card: Awaited<ReturnType<typeof runCardAgent>> | undefined;
 
   if (rails.includes("x402")) {
+    log.push({
+      phase: "route",
+      text: "Liquidity: check USDT0 → OKX DEX native→USDT0 if short → then x402",
+    });
     log.push({ phase: "x402", text: buyerMessage });
     x402 = await runBuyerAgent({ origin, message: buyerMessage });
     for (const step of x402.steps) {
       log.push({ phase: "x402", text: step.text });
+    }
+    if (x402.receipt?.ownershipPoints) {
+      log.push({
+        phase: "own",
+        text: `Network ownership +${x402.receipt.ownershipPoints} pts (protocol fee ${x402.receipt.protocolFeeBps ?? config.protocolFeeBps} bps)`,
+      });
+    }
+    if (x402.receipt?.swapExplorerUrl || x402.receipt?.routeSummary) {
+      log.push({
+        phase: "route",
+        text:
+          x402.receipt.routeSummary ||
+          `Swap explorer: ${x402.receipt.swapExplorerUrl}`,
+      });
     }
   }
 
@@ -71,10 +93,11 @@ export async function POST(request: Request) {
   return Response.json({
     ok: true,
     pitch: {
-      xlayer: "HTTP 402 → USDT0 on X Layer Testnet → PAYMENT-SIGNATURE → 200",
+      xlayer:
+        "Intent → liquidity route → HTTP 402 → USDT0 on X Layer → ownership",
       straitsx: "Scoped virtual card mandate → checkout → burn",
       aws: "Bedrock agents + API Gateway/Lambda/DynamoDB protocol slice",
-      okx: "OKX FacilitatorClient verify + settle on eip155:1952",
+      okx: "OKX DEX quote + FacilitatorClient verify/settle on X Layer",
     },
     merchant,
     x402,

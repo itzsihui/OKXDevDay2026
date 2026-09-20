@@ -33,6 +33,13 @@ export type MarketProductPick = {
   /** CaMeL quarantine flags — present when catalog copy looked like injection. */
   injectionFlags?: string[];
   quarantined?: boolean;
+  /** Tokenized / RWA metadata when the SKU is on-chain claim shaped. */
+  tokenization?: {
+    kind: string;
+    contractAddress: string;
+    underlying?: string;
+    explorerUrl?: string;
+  };
 };
 
 /**

@@ -11,7 +11,12 @@ import {
   recordSpend,
   formatSizingSummary,
 } from "@/lib/buyer-account";
+import { toAtomic } from "@/lib/config";
 import { readDemoSession, writeDemoSession } from "@/lib/demo-session";
+import {
+  accrueOwnershipFromPurchase,
+  captureInviteFromUrl,
+} from "@/lib/ownership";
 import { ProductPayModal } from "./_components/product-pay-modal";
 import { CartPayModal } from "./_components/cart-pay-modal";
 import { ChatHistorySidebar } from "./_components/chat-history-sidebar";
@@ -158,6 +163,7 @@ export default function BuyerPage() {
   }, [sidebarPinned]);
 
   useEffect(() => {
+    captureInviteFromUrl();
     const session = readDemoSession();
     const store = session.lastStore ?? null;
     setStoreSlug(store?.slug ?? null);
@@ -1000,7 +1006,15 @@ export default function BuyerPage() {
               const data = (await res.json()) as {
                 steps?: Array<{ type: string; text: string }>;
                 error?: string;
-                receipt?: { explorerUrl?: string; orderId?: string };
+                receipt?: {
+                  explorerUrl?: string;
+                  orderId?: string;
+                  ownershipPoints?: number;
+                  grossAtomic?: string;
+                  feeAtomic?: string;
+                  swapExplorerUrl?: string;
+                  routeSummary?: string;
+                };
               };
               if (
                 (data.steps ?? []).some((s) => s.type === "error") ||
@@ -1030,10 +1044,28 @@ export default function BuyerPage() {
                 explorerUrl: explorer,
                 orderId: data.receipt?.orderId,
               });
+              try {
+                const gross =
+                  data.receipt?.grossAtomic || toAtomic(line.price);
+                accrueOwnershipFromPurchase({
+                  orderId: data.receipt?.orderId,
+                  grossAtomic: gross,
+                  feeAtomic: data.receipt?.feeAtomic,
+                  storeSlug: line.storeSlug,
+                });
+              } catch {
+                // ownership is best-effort demo ledger
+              }
               if (explorer) {
                 links.push({
                   label: `X Layer explorer · ${skuId}`,
                   href: explorer,
+                });
+              }
+              if (data.receipt?.swapExplorerUrl) {
+                links.push({
+                  label: `Liquidity route · ${skuId}`,
+                  href: data.receipt.swapExplorerUrl,
                 });
               }
             } else {

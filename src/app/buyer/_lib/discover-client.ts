@@ -24,6 +24,12 @@ type SearchApiProduct = {
   visaReceiveId?: string;
   imageUrl?: string;
   score: number;
+  tokenization?: {
+    kind: string;
+    contractAddress: string;
+    underlying?: string;
+    explorerUrl?: string;
+  };
 };
 
 type SearchPayload = {
@@ -76,6 +82,7 @@ function toPick(
     score,
     injectionFlags: q.injectionFlags.length ? q.injectionFlags : undefined,
     quarantined: q.injectionFlags.length > 0,
+    tokenization: product.tokenization,
   };
 }
 

@@ -76,6 +76,16 @@ export const config = {
       undefined
     );
   },
+  /**
+   * Protocol micro-fee in basis points (app-layer ownership accrual).
+   * Merchant still receives full listed USDT0 via x402.
+   */
+  protocolFeeBps: Number(env("PROTOCOL_FEE_BPS", "50")),
+  /** Optional treasury address for fee narrative / future on-chain splits. */
+  treasuryAddress: env(
+    "TREASURY_ADDRESS",
+    "0x00000000000000000000000000000000000000fe",
+  ),
 };
 
 export function explorerTx(hash: string) {

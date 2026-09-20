@@ -38,6 +38,7 @@ export type MarketProduct = {
   visaReceiveId?: string;
   imageUrl: string;
   attrs?: import("@/lib/store/types").SkuAttrs;
+  tokenization?: import("@/lib/store/types").SkuTokenization;
 };
 
 export function buildRegistryStores(
@@ -241,6 +242,7 @@ export function flattenMarketProducts(stores: StoreRecord[]): MarketProduct[] {
         visaReceiveId: store.visaReceive?.receiveId,
         imageUrl: imageForProduct(sku.title, sku.description, sku.id),
         attrs: sku.attrs,
+        tokenization: sku.tokenization,
       });
     }
   }

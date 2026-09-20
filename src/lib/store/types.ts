@@ -8,6 +8,16 @@ export type SkuAttrs = {
   tags?: string[];
 };
 
+export type SkuTokenization = {
+  /** e.g. rwa | tokenized-equity | fractional-claim | meme */
+  kind: "rwa" | "tokenized-equity" | "fractional-claim" | "meme";
+  /** On-chain contract on X Layer (demo or live). */
+  contractAddress: string;
+  /** Human label for the underlying claim. */
+  underlying?: string;
+  explorerUrl?: string;
+};
+
 export type Sku = {
   id: string;
   title: string;
@@ -16,6 +26,8 @@ export type Sku = {
   price: string;
   /** Structured fashion facets for catalog + search (optional). */
   attrs?: SkuAttrs;
+  /** Tokenized / RWA metadata for Build a Market track demos. */
+  tokenization?: SkuTokenization;
 };
 
 /** Merchant Visa/fiat receiving account stamped onto the store at publish. */
@@ -72,6 +84,16 @@ export type Order = {
   buyerUid?: string;
   createdAt: string;
   paidAt?: string;
+  /** Gross atomic amount (same as amountAtomic for x402). */
+  grossAtomic?: string;
+  /** Protocol fee in atomic units (app-layer ownership accrual). */
+  feeAtomic?: string;
+  /** Net narrative to merchant (full listed amount for x402). */
+  netToMerchantAtomic?: string;
+  protocolFeeBps?: number;
+  referrerId?: string;
+  swapTxHash?: string;
+  ownershipPoints?: number;
 };
 
 export type ReviewRating = 1 | 2 | 3 | 4 | 5;

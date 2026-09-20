@@ -416,5 +416,52 @@ export function sampleMarketStores(
         ),
       ],
     },
+    {
+      slug: "xlayer-rwa-desk",
+      name: "X Layer RWA Desk",
+      merchantAddress,
+      listOnMarket: true,
+      createdAt,
+      skus: [
+        {
+          id: "fractional-sg-office-claim",
+          title: "Fractional SG Office Claim / Series A",
+          description:
+            "Tokenized real-world asset claim on X Layer — demo fractional office exposure. Settle USDT0 via x402; contract is the on-chain claim receipt.",
+          quantity: 25,
+          price: "0.05",
+          attrs: {
+            subcategory: "rwa",
+            tags: ["tokenized", "rwa", "real-world-asset", "xlayer", "equity-like"],
+          },
+          tokenization: {
+            kind: "rwa",
+            contractAddress: "0x9e29b3aada05bf2d2c827af80bd28dc0b9b4fb0c",
+            underlying: "Singapore office fractional claim (demo)",
+            explorerUrl:
+              "https://www.okx.com/web3/explorer/xlayer-test/address/0x9e29b3aada05bf2d2c827af80bd28dc0b9b4fb0c",
+          },
+        },
+        {
+          id: "tokenized-equity-drop",
+          title: "Borneo Network Equity Drop / Demo",
+          description:
+            "Tokenized equity-like network stake drop. Buy with intent ('deploy funds into this asset'); agent routes liquidity then settles on X Layer.",
+          quantity: 40,
+          price: "0.02",
+          attrs: {
+            subcategory: "tokenized-equity",
+            tags: ["tokenized-equity", "ownership", "governance", "xlayer"],
+          },
+          tokenization: {
+            kind: "tokenized-equity",
+            contractAddress: "0x779ded0c9e1022225f8e0630b35a9b54be713736",
+            underlying: "Borneo protocol ownership units (demo)",
+            explorerUrl:
+              "https://www.okx.com/web3/explorer/xlayer-test/address/0x779ded0c9e1022225f8e0630b35a9b54be713736",
+          },
+        },
+      ],
+    },
   ];
 }

@@ -1,7 +1,7 @@
 # Borneo — 60s pitch (OKX Dev Day)
 
-**Open agent storefronts. Settle USDT0 on X Layer.**
+**Intent → route → settle → own. On X Layer.**
 
-Publish once → any HTTP agent can shop you → x402 pay-per-call via OKX Onchain OS — not locked inside two chat apps.
+Say what you want → the agent routes wallet liquidity into USDT0 → settles via x402 (OKX Onchain OS) → you earn network ownership from the protocol micro-fee.
 
-Demo: `/onboard` publish → `/buyer` authorize → 402 → receipt on X Layer explorer.
+Demo: `/buyer` intent → liquidity route preview → authorize → X Layer receipt → `/buyer/ownership`.

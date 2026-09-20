@@ -1,8 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { MarketProductPick, PaymentRail } from "../_lib/buyer-flow";
+
+type RoutePreview = {
+  needed?: boolean;
+  message?: string;
+  quote?: {
+    mode?: string;
+    fromSymbol?: string;
+    toSymbol?: string;
+    fromAmountHuman?: string;
+    toAmountHuman?: string;
+    routeSummary?: string;
+  };
+  balances?: {
+    usdt0Human?: string;
+    nativeHuman?: string;
+    hasEnoughUsdt0?: boolean;
+  };
+};
 
 export function PaymentConsentModal({
   open,
@@ -19,6 +37,8 @@ export function PaymentConsentModal({
   onAuthorize: () => void;
   busy?: boolean;
 }) {
+  const [route, setRoute] = useState<RoutePreview | null>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -27,6 +47,27 @@ export function PaymentConsentModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, busy, onCancel]);
+
+  useEffect(() => {
+    if (!open || !product || rail !== "stablecoin") {
+      setRoute(null);
+      return;
+    }
+    let cancelled = false;
+    void fetch(
+      `/api/liquidity?price=${encodeURIComponent(product.price)}&execute=0`,
+    )
+      .then((r) => r.json())
+      .then((data: RoutePreview) => {
+        if (!cancelled) setRoute(data);
+      })
+      .catch(() => {
+        if (!cancelled) setRoute(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, product, rail]);
 
   if (!open || !product || !rail) return null;
 
@@ -85,10 +126,46 @@ export function PaymentConsentModal({
             <div className="flex justify-between gap-4">
               <dt className="text-foreground/55">Rail</dt>
               <dd className="text-right">
-                {isVisa ? "Visa (agent-authorized card)" : "USDT0 · X Layer Testnet x402"}
+                {isVisa
+                  ? "Visa (agent-authorized card)"
+                  : "USDT0 · X Layer Testnet x402"}
               </dd>
             </div>
+            {!isVisa && product.tokenization ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-foreground/55">Tokenized</dt>
+                <dd className="text-right text-xs">
+                  {product.tokenization.kind}
+                  {product.tokenization.underlying
+                    ? ` · ${product.tokenization.underlying}`
+                    : null}
+                </dd>
+              </div>
+            ) : null}
           </dl>
+
+          {!isVisa && route ? (
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5 text-[13px] leading-relaxed text-foreground/75">
+              <p className="font-medium text-foreground/85">Liquidity route</p>
+              <p className="mt-1">
+                Wallet USDT0:{" "}
+                <strong>{route.balances?.usdt0Human ?? "—"}</strong>
+                {route.balances?.hasEnoughUsdt0
+                  ? " (covers purchase)"
+                  : " (will route if short)"}
+              </p>
+              {route.quote ? (
+                <p className="mt-1">
+                  {route.quote.mode === "live" ? "Live" : "Plan"}:{" "}
+                  {route.quote.fromAmountHuman} {route.quote.fromSymbol} → ~
+                  {route.quote.toAmountHuman} {route.quote.toSymbol}
+                </p>
+              ) : null}
+              {route.message ? (
+                <p className="mt-1 text-xs text-foreground/55">{route.message}</p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5 text-[13px] leading-relaxed text-foreground/75">
             {isVisa ? (
@@ -100,9 +177,10 @@ export function PaymentConsentModal({
               </>
             ) : (
               <>
-                On-chain settlement via x402 on X Layer Testnet: expect HTTP 402,
-                transfer <strong>{product.price}</strong> USDT0 to the merchant,
-                then complete with PAYMENT-SIGNATURE. No redirect out of chat.
+                Intent → route → settle: agent checks balances, routes native →
+                USDT0 on X Layer when needed, then x402 PAYMENT-SIGNATURE.
+                Protocol micro-fee accrues <strong>network ownership</strong>{" "}
+                after settle (merchant still receives full listed amount).
               </>
             )}
           </div>

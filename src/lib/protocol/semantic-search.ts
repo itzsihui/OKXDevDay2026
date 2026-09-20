@@ -53,6 +53,7 @@ function openaiKey() {
 
 function productText(p: MarketProduct) {
   const a = p.attrs;
+  const t = p.tokenization;
   return [
     p.title,
     p.description,
@@ -63,6 +64,10 @@ function productText(p: MarketProduct) {
     a?.size,
     a?.material,
     ...(a?.tags ?? []),
+    t?.kind,
+    t?.underlying,
+    t?.kind === "rwa" ? "tokenized real-world asset RWA" : "",
+    t?.kind === "tokenized-equity" ? "tokenized equity ownership stake" : "",
   ]
     .filter(Boolean)
     .join(" · ");

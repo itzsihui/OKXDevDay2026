@@ -8,6 +8,7 @@ import type {
 import { ExactEvmScheme } from "@okxweb3/x402-evm/exact/client";
 import { resolveBuyerTarget } from "@/lib/agents/discover";
 import { config, explorerTx, toAtomic, toPaymentAmount } from "@/lib/config";
+import { ensureUsdt0Liquidity } from "@/lib/liquidity/route";
 import { emit } from "@/lib/protocol/events";
 
 export type BuyerStep = {
@@ -22,6 +23,11 @@ export type BuyerReceipt = {
   amount?: string;
   rail?: string;
   status?: string;
+  swapTxHash?: string;
+  swapExplorerUrl?: string;
+  routeSummary?: string;
+  ownershipPoints?: number;
+  protocolFeeBps?: number;
   [key: string]: unknown;
 };
 
@@ -115,6 +121,60 @@ export async function payX402Tool(args: {
     text: `GET catalog.json → ${catalogRes.status} · sku ${sku.id}`,
   });
 
+  let expectedAmount: string;
+  let expectedAtomic: string;
+  try {
+    expectedAmount = toPaymentAmount(expectedPrice);
+    expectedAtomic = toAtomic(expectedPrice);
+  } catch {
+    steps.push({
+      type: "error",
+      text: `Invalid locked price: ${expectedPrice}`,
+    });
+    return { steps };
+  }
+
+  steps.push({
+    type: "info",
+    text: "Routing liquidity on X Layer (USDT0 balance → OKX DEX if short)",
+  });
+  let routeSwapTx: string | undefined;
+  let routeSummary: string | undefined;
+  try {
+    const route = await ensureUsdt0Liquidity({
+      price: expectedPrice,
+      quantity: 1,
+      execute: true,
+    });
+    if (route.balances) {
+      steps.push({
+        type: "chain",
+        text: `Wallet ${route.balances.address.slice(0, 8)}… · ${config.tokenSymbol} ${route.balances.usdt0Human} · native ${route.balances.nativeHuman}`,
+      });
+    }
+    if (route.quote) {
+      routeSummary = route.quote.routeSummary;
+      steps.push({
+        type: route.quote.mode === "live" ? "chain" : "info",
+        text: `${route.quote.mode === "live" ? "Live" : "Plan"} route: ${route.quote.fromAmountHuman} ${route.quote.fromSymbol} → ~${route.quote.toAmountHuman} ${route.quote.toSymbol}`,
+      });
+    }
+    if (route.executed && route.swapTxHash) {
+      routeSwapTx = route.swapTxHash;
+      steps.push({
+        type: "success",
+        text: `Liquidity routed · ${route.explorerUrl || route.swapTxHash}`,
+      });
+    } else {
+      steps.push({ type: "info", text: route.message });
+    }
+  } catch (error) {
+    steps.push({
+      type: "info",
+      text: `Liquidity check skipped: ${error instanceof Error ? error.message : "unknown"}`,
+    });
+  }
+
   const orderId = crypto.randomUUID();
   steps.push({ type: "info", text: `POST ${base}/buy (no payment)` });
   const first = await fetch(`${base}/buy`, {
@@ -125,6 +185,7 @@ export async function payX402Tool(args: {
       quantity: 1,
       orderId,
       buyerUid,
+      swapTxHash: routeSwapTx,
     }),
   });
   const challenge = (await first.json()) as PaymentRequired & {
@@ -150,19 +211,6 @@ export async function payX402Tool(args: {
     steps.push({
       type: "error",
       text: `Capability check failed: 402 payTo ${accept.payTo} does not match locked merchant ${expectedPayTo}`,
-    });
-    return { steps };
-  }
-
-  let expectedAmount: string;
-  let expectedAtomic: string;
-  try {
-    expectedAmount = toPaymentAmount(expectedPrice);
-    expectedAtomic = toAtomic(expectedPrice);
-  } catch {
-    steps.push({
-      type: "error",
-      text: `Invalid locked price: ${expectedPrice}`,
     });
     return { steps };
   }
@@ -241,6 +289,7 @@ export async function payX402Tool(args: {
       quantity: 1,
       orderId,
       buyerUid,
+      swapTxHash: routeSwapTx,
     }),
   });
   const secondText = await second.text();
@@ -261,6 +310,11 @@ export async function payX402Tool(args: {
   if (receipt.txHash && !receipt.explorerUrl) {
     receipt.explorerUrl = explorerTx(String(receipt.txHash));
   }
+  if (routeSwapTx) {
+    receipt.swapTxHash = routeSwapTx;
+    receipt.swapExplorerUrl = explorerTx(routeSwapTx);
+  }
+  if (routeSummary) receipt.routeSummary = routeSummary;
   steps.push({
     type: second.ok ? "success" : "error",
     text: `HTTP ${second.status} ${second.ok ? "receipt unlocked" : JSON.stringify(receipt)}`,
@@ -269,6 +323,12 @@ export async function payX402Tool(args: {
     steps.push({ type: "success", text: receipt.explorerUrl });
   } else if (second.ok && receipt.txHash) {
     steps.push({ type: "success", text: explorerTx(String(receipt.txHash)) });
+  }
+  if (second.ok && receipt.ownershipPoints) {
+    steps.push({
+      type: "success",
+      text: `Network ownership +${receipt.ownershipPoints} pts (${receipt.protocolFeeBps ?? config.protocolFeeBps} bps protocol fee)`,
+    });
   }
   return { steps, receipt };
 }
