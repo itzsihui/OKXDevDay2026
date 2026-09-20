@@ -51,7 +51,7 @@ You search LIVE seller catalogs later (registry + each store's products). Never 
 
 Think like a salesperson in a store — reason from CONTEXT, not a fixed keyword list:
 - Read the FULL conversation and fix obvious typos (presetn→presentation, profesional→professional, gona→gonna, hwo→how).
-- Meta / how-to first. If they ask how this works, what you do, or greet without naming clothes ("hi", "hello", "how does this work"), stay status "clarifying". Briefly explain the flow (chat → clarify → search live catalogs → pick → pay Visa/RLUSD) and ask what they want to wear. Do NOT invent an occasion or search.
+- Meta / how-to first. If they ask how this works, what you do, or greet without naming clothes ("hi", "hello", "how does this work"), stay status "clarifying". Briefly explain the flow (chat → clarify → search live catalogs → pick → pay Visa/USDT0) and ask what they want to wear. Do NOT invent an occasion or search.
 - Never treat the verb "work" in "how does this work" / "does it work" as a work/office outfit.
 - Infer occasion + vibe dynamically from what they said (party, date, interview, beach, weekend, wedding, gym, … — open-ended). Put the inferred occasion in profile.occasion (short free text).
 - The LATEST user message wins on occasion. If they said presentation earlier then "how about a party", switch to party — do not keep presenting work looks.
@@ -275,7 +275,7 @@ function detectStyle(text: string): string | undefined {
 }
 
 const META_HELP_REPLY =
-  "You chat with me like a salesperson — tell me the occasion or piece you want, I clarify if needed, then I search live seller catalogs on Borneo. You pick what you like and pay in chat with Visa or RLUSD (nothing charges until you authorize). What are you looking to wear?";
+  "You chat with me like a salesperson — tell me the occasion or piece you want, I clarify if needed, then I search live seller catalogs on Borneo. You pick what you like and pay in chat with Visa or USDT0 (nothing charges until you authorize). What are you looking to wear?";
 
 const META_HELP_SUGGESTIONS = [
   "I want a t-shirt",
@@ -571,7 +571,7 @@ function enrichProfile(
       /\b(?:under|below|max|budget)\s*([\d]+(?:\.\d+)?)\s*(usdc|xsgd|usd|sgd|rlusd)?\b/,
     );
     if (budget) {
-      next.budget = `${budget[1]} ${(budget[2] || "RLUSD").toUpperCase()}`;
+      next.budget = `${budget[1]} ${(budget[2] || "USDT0").toUpperCase()}`;
     }
   }
   return next;
@@ -843,7 +843,7 @@ export function runDeterministicSalesperson(
     if (/\bblack\b/i.test(lower)) profile.color = "black";
     if (/\bwhite\b/i.test(lower)) profile.color = "white";
     const budget = lower.match(/under\s+([\d]+(?:\.\d+)?)\s*(usdc|xsgd|usd|rlusd)?/i);
-    if (budget) profile.budget = `${budget[1]} ${(budget[2] || "RLUSD").toUpperCase()}`;
+    if (budget) profile.budget = `${budget[1]} ${(budget[2] || "USDT0").toUpperCase()}`;
   }
 
   if (turns === 0 || (!latest && turns <= 1)) {
@@ -1241,8 +1241,8 @@ export function runDeterministicSalesperson(
   if (item === "compare" && turns === 1) {
     return {
       reply:
-        "I can compare tees and caps across seller catalogs. Prefer a budget under 0.02 RLUSD, or just show both?",
-      suggestions: ["Under 0.02 RLUSD", "Show both", "Focus on the tee"],
+        "I can compare tees and caps across seller catalogs. Prefer a budget under 0.02 USDT0, or just show both?",
+      suggestions: ["Under 0.02 USDT0", "Show both", "Focus on the tee"],
       status: "clarifying",
       profile: { ...profile, item: "shirt vs cap" },
       llm: "deterministic",
@@ -1280,7 +1280,7 @@ export function runDeterministicSalesperson(
       profile: {
         ...profile,
         item: "shirt vs cap",
-        budget: profile.budget || "0.02 RLUSD",
+        budget: profile.budget || "0.02 USDT0",
       },
       llm: "deterministic",
     };

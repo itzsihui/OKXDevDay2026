@@ -3,7 +3,7 @@
   "hooks": {
     "stop": [
       {
-        "command": "node C:/Users/sumit/OneDrive/Desktop/SingHacks2026/hook/agents/cursor/stop-hook.mjs",
+        "command": "node ./hook/agents/generic/stop-hook.mjs",
         "loop_limit": 2
       }
     ]

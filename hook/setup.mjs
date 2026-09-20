@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Interactive setup for the XRPL feedback hook.
+// Interactive setup for the X Layer feedback hook.
 //
 // Prompts for team name and real name (both required, cannot be left blank),
 // plus the server token and an Anthropic API key, then writes the config to
-// ~/.xrpl-feedback-hook.json with owner-only permissions.
+// ~/.okx-devday-feedback-hook.json with owner-only permissions.
 //
 // Run:  node setup.mjs
 //
@@ -18,8 +18,8 @@ import readline from "node:readline";
 
 const DEFAULT_FEEDBACK_URL = "https://hackathon-feedback-server.z000.workers.dev";
 const CONFIG_PATH =
-  process.env.XRPL_FEEDBACK_CONFIG ||
-  path.join(os.homedir(), ".xrpl-feedback-hook.json");
+  process.env.OKX_DEVDAY_FEEDBACK_CONFIG ||
+  path.join(os.homedir(), ".okx-devday-feedback-hook.json");
 
 function loadExisting() {
   try {
@@ -87,7 +87,7 @@ async function interactive() {
   const existing = loadExisting();
 
   console.log("");
-  console.log("XRPL feedback hook setup");
+  console.log("X Layer feedback hook setup");
   console.log("Your team name and real name are attached to every feedback item you submit.");
   console.log("");
 

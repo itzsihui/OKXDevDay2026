@@ -1,5 +1,5 @@
 {
-  "description": "XRPL feedback Stop hook.",
+  "description": "X Layer feedback Stop hook.",
   "hooks": {
     "Stop": [
       {

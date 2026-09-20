@@ -7,7 +7,7 @@ pdf_options:
 
 # Borneo — Project Description
 
-**Two-sided agentic commerce:** merchants publish agent-ready catalogs; buyers discover and pay in one chat — with **Visa-scoped cards** and **USDC**, secured by a **CaMeL-shaped** settle lock against prompt injection.
+**Two-sided agentic commerce:** merchants publish agent-ready catalogs; buyers discover and pay in one chat — with **Visa-scoped cards** and **USDT0 on X Layer**, secured by a **CaMeL-shaped** settle lock against prompt injection.
 
 | | |
 |---|---|
@@ -33,7 +33,7 @@ Prompt injection is widely recognized as one of the largest unsolved problems fo
 **Borneo** is a two-sided network:
 
 - **Merchant side** — Conversational onboard (chat / CSV / URL) → bind Visa receive + wallet → publish agent-discoverable storefronts.
-- **Buyer side** — Fashion salesperson chat discovers **live** multi-merchant SKUs, builds a set/cart, and settles **in the same conversation** via Visa or USDC.
+- **Buyer side** — Fashion salesperson chat discovers **live** multi-merchant SKUs, builds a set/cart, and settles **in the same conversation** via Visa or USDT0 on X Layer.
 
 Security is not a warning banner. Inspired by Google DeepMind / ETH Zurich **CaMeL** (*Capabilities for Machine Learning* — [arXiv:2503.18813](https://arxiv.org/abs/2503.18813)), Borneo applies a **CaMeL-shaped control-flow lock** at settle:
 
@@ -59,7 +59,7 @@ Borneo productizes that principle for commerce: **untrusted catalog data must no
 | **Buyer salesperson chat** | Intent → multi-query catalog search → ranked live SKUs (not a hardcoded aisle). |
 | **Build your set / cart** | Add multiple pieces; pay cart in chat; each SKU settles on its own locked quote. |
 | **Visa-scoped checkout** | Spend cap, merchant scope, authorize-first virtual card flow in chat. |
-| **Visa-powered stablecoin rail** | Optional USDC settle via **HTTP 402 / x402** on Base Sepolia. |
+| **Visa-powered stablecoin rail** | USDT0 settle via **HTTP 402 / x402** on X Layer (OKX facilitator). |
 | **Merchant agent onboard** | Inventory talk / CSV / URL → published store with agent discovery files. |
 | **Agent storefront protocol** | Agents read `/llms.txt`, `/registry.json`, `/s/{slug}/catalog.json` — **no HTML scrape**. |
 | **CaMeL-shaped quarantine + locked quotes** | Injection demo (e.g. hostile tee) flagged; settle still locks payee/amount. |
@@ -75,7 +75,7 @@ Borneo productizes that principle for commerce: **untrusted catalog data must no
 | App | Next.js, React, TypeScript, Tailwind CSS, Motion |
 | Agents | OpenAI (salesperson + merchant); deterministic tool fallbacks without keys |
 | Auth / data | Firebase Auth + Firestore profiles |
-| Payments | Visa-scoped card flow (fiat-first); USDC on Base Sepolia via **viem** + **x402 / HTTP 402** |
+| Payments | Visa-scoped card flow (fiat-first); USDT0 on X Layer via **@okxweb3/x402-*** + **viem** |
 | Protocol | Hono-style agent endpoints; machine catalogs for discovery |
 | Security model | CaMeL-inspired quarantine reader + locked-quote settle (AgentDojo-validated design pattern) |
 | Other | Zod, MetaMask (merchant bind), local/session persistence for demo reliability |
@@ -100,7 +100,7 @@ A fashion marketplace where AI buyers shop in chat and merchants publish once fo
 ## 6. Additional Information
 
 **Try the flows**
-- `/buyer` — Shop chat → discover → Visa or USDC  
+- `/buyer` — Shop chat → discover → Visa or USDT0  
 - Merchant onboard — inventory → publish store  
 - `/market` — browse as human or agent  
 - Seed stores under `/s/{slug}/llms.txt`

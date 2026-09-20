@@ -52,7 +52,7 @@ export type ChatMessage = {
   content: string;
   /** Catalog hits attached after a real network search — never invent these. */
   products?: MarketProductPick[];
-  /** Optional outbound links (e.g. XRPL explorer receipt). */
+  /** Optional outbound links (e.g. X Layer explorer receipt). */
   links?: Array<{ label: string; href: string }>;
   /** Expandable thought process for this turn (stays after search completes). */
   steps?: ChainStep[];
@@ -254,7 +254,7 @@ export function catalogResultMessage(
 
   const setHint = isRealSet
     ? " These look like complementary pieces — add what you want in Build your set, or tap a piece for details and pay."
-    : " Tap a piece for details, then pay with Visa or RLUSD.";
+    : " Tap a piece for details, then pay with Visa or USDT0.";
 
   const wantedPieces = [
     ...(profile?.items || []),

@@ -25,9 +25,9 @@ import { repo } from "@/lib/store/repo";
 import type { Sku, StoreRecord } from "@/lib/store/types";
 import {
   parseMerchantAddress,
-  type ClassicAddress,
+  type HexAddress,
   type MerchantAuthProof,
-} from "@/lib/wallet/xrpl";
+} from "@/lib/wallet/ethereum";
 
 export type MerchantToolResult =
   | {
@@ -127,7 +127,7 @@ function needWalletResult(draft: MerchantDraft | null): MerchantToolResult {
     status: "clarify",
     store: null,
     reply:
-      "Server MERCHANT_ADDRESS is missing or invalid. Set a classic XRPL r… address in env, then retry publish.",
+      "Server MERCHANT_ADDRESS is missing or invalid. Set an EVM 0x… address in env, then retry publish.",
     draft: null,
   };
 }
@@ -143,7 +143,7 @@ function needVariantsResult(
     reply:
       reply ??
       (fashionCompletenessAsk(enriched.lines) ||
-        "Fill subcategory, size, color, and other fashion details in the inventory form, then set RLUSD prices."),
+        "Fill subcategory, size, color, and other fashion details in the inventory form, then set USDT0 prices."),
     draft: enriched,
   };
 }
@@ -221,7 +221,7 @@ export async function mergeInventoryIntoStore(
 }
 
 /** Demo: every merchant store settles to the shared MERCHANT_ADDRESS env. */
-function resolvePayTo(): ClassicAddress | null {
+function resolvePayTo(): HexAddress | null {
   return parseMerchantAddress(config.merchantAddress);
 }
 
@@ -602,7 +602,7 @@ export async function saveDraftToLiveStore(args: {
   if (completeLines.length === 0) {
     return needPriceResult(
       withQty,
-      "No complete SKUs to save yet — fill size/color, qty, and RLUSD price on at least one row.",
+      "No complete SKUs to save yet — fill size/color, qty, and USDT0 price on at least one row.",
     );
   }
 
@@ -651,6 +651,6 @@ export async function saveDraftToLiveStore(args: {
   return published;
 }
 
-export type { ClassicAddress, MerchantAuthProof };
-export type HexAddress = ClassicAddress;
+export type { HexAddress, MerchantAuthProof };
+export type ClassicAddress = HexAddress;
 export { draftLineKey };

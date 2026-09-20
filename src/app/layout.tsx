@@ -23,10 +23,14 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "Borneo | Open agent storefronts",
   description:
-    "Agent-ready stores open to any HTTP agent — not locked to ChatGPT or Claude. Shoppers discover via /api/search and settle RLUSD in chat via x402. Catalog text cannot change payee, amount, or skip authorize.",
+    "Agent-ready stores open to any HTTP agent — not locked to ChatGPT or Claude. Shoppers discover via /api/search and settle USDT0 in chat via x402. Catalog text cannot change payee, amount, or skip authorize.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="en"

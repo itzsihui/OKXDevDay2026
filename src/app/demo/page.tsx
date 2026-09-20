@@ -29,7 +29,7 @@ export default function DemoPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           merchantMessage:
-            "Create a store. I'm selling 50 VISA Hackathon Shirts for 0.01 RLUSD each.",
+            "Create a store. I'm selling 50 VISA Hackathon Shirts for 0.01 USDT0 each.",
           buyerMessage:
             "Agent, go to /s/hackathon-shirts and buy a hackathon shirt.",
           rails: ["x402", "card"],
@@ -40,7 +40,7 @@ export default function DemoPage() {
         snowtrace?: string | null;
         explorerUrl?: string | null;
         error?: string;
-        pitch?: { avalanche?: string; xrpl?: string; straitsx?: string; aws?: string };
+        pitch?: { xlayer?: string; straitsx?: string; aws?: string; okx?: string };
       };
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`);
@@ -58,8 +58,9 @@ export default function DemoPage() {
           ...prev,
           {
             role: "pitch",
-            text: `XRPL: ${data.pitch?.xrpl || data.pitch?.avalanche}`,
+            text: `X Layer: ${data.pitch?.xlayer}`,
           },
+          { role: "pitch", text: `OKX: ${data.pitch?.okx}` },
           { role: "pitch", text: `VISA: ${data.pitch?.straitsx}` },
           { role: "pitch", text: `AWS: ${data.pitch?.aws}` },
         ]);
@@ -118,7 +119,7 @@ export default function DemoPage() {
 
         {explorerUrl ? (
           <p className="mt-4 text-sm">
-            XRPL explorer:{" "}
+            X Layer explorer:{" "}
             <a
               className="text-primary underline-offset-4 hover:underline"
               href={explorerUrl}

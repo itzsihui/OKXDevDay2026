@@ -34,7 +34,7 @@ const TURNS = [
     who: "Agent",
     text: "Pulled an Oxford Shirt and Selvedge Jeans across sellers. Tap a card when you're ready.",
   },
-  { who: "You", text: "Pay with RLUSD." },
+  { who: "You", text: "Pay with USDT0." },
   {
     who: "Agent",
     text: "x402 quote ready. I will not settle until you authorize.",
@@ -140,7 +140,7 @@ export function LandingHome() {
                 )}
               >
                 Talk your catalog live — open registry and /api/search, not
-                locked inside ChatGPT or Claude. Buyers settle RLUSD in chat via
+                locked inside ChatGPT or Claude. Buyers settle USDT0 in chat via
                 x402. Start as a seller below.
               </p>
             </div>
@@ -180,7 +180,7 @@ export function LandingHome() {
               </h2>
               <p className="mt-2 max-w-[36ch] text-sm leading-relaxed text-[var(--landing-fog)]/60">
                 Ranks via /api/search — same endpoint agents use — then settles
-                RLUSD on XRPL after you authorize.
+                USDT0 on X Layer after you authorize.
               </p>
               <span className="mt-6 inline-flex text-sm font-medium text-[var(--landing-jade)] group-hover:underline">
                 Continue to Shop
@@ -277,7 +277,7 @@ export function LandingHome() {
               <p className="mt-4 max-w-[44ch] text-base leading-relaxed text-[var(--landing-fog)]/60">
                 Occasion-aware shopper — then ranks via protocol search, not
                 HTML scrape or a walled agent store. Checkout stays in chat:
-                authorize once, settle RLUSD via x402.
+                authorize once, settle USDT0 via x402.
               </p>
               <Link href="/buyer/login" className={cn(btnPrimary, "mt-8")}>
                 I want to shop
@@ -353,10 +353,10 @@ export function LandingHome() {
                 aria-hidden
               />
               <h2 className="mt-5 max-w-[16ch] font-[family-name:var(--font-syne)] text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-tight text-[var(--landing-fog)]">
-                RLUSD settle stays inside the chat.
+                USDT0 settle stays inside the chat.
               </h2>
               <p className="mt-3 max-w-[46ch] text-[var(--landing-fog)]/55">
-                HTTP 402 / x402 on XRPL — no redirect checkout tab. The agent
+                HTTP 402 / x402 on X Layer — no redirect checkout tab. The agent
                 only settles after you authorize. Locked quote: payee, amount,
                 and SKU cannot be rewritten by catalog copy.
               </p>
@@ -368,7 +368,7 @@ export function LandingHome() {
                   x402, agent-ready
                 </p>
                 <p className="mt-3 max-w-[46ch] text-sm leading-relaxed text-[var(--landing-fog)]/65">
-                  Challenge → authorize → settle RLUSD to the merchant wallet.
+                  Challenge → authorize → settle USDT0 to the merchant wallet.
                   Same path for the fashion chat and any external HTTP agent.
                 </p>
                 <p className="mt-6 font-mono text-xs leading-relaxed text-[var(--landing-jade)]">
@@ -380,7 +380,7 @@ export function LandingHome() {
                 className="rounded-md border border-white/10 bg-black/25 p-7 md:p-9"
               >
                 <p className="font-[family-name:var(--font-syne)] text-xl font-semibold text-[var(--landing-fog)]">
-                  RLUSD on XRPL
+                  USDT0 on X Layer
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-[var(--landing-fog)]/55">
                   Stablecoin settle on testnet — exact amount, locked payTo,
@@ -456,13 +456,13 @@ export function LandingHome() {
                 <div>
                   <dt className="text-[var(--landing-fog)]/45">Amount</dt>
                   <dd className="mt-1 text-[var(--landing-fog)]">
-                    0.01 RLUSD
+                    0.01 USDT0
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[var(--landing-fog)]/45">Rail</dt>
                   <dd className="mt-1 text-[var(--landing-fog)]">
-                    RLUSD · x402 on XRPL
+                    USDT0 · x402 on X Layer
                   </dd>
                 </div>
               </dl>
@@ -511,7 +511,7 @@ export function LandingHome() {
                 <span className="font-[family-name:var(--font-syne)] text-[var(--landing-fog)]">
                   Settle.{" "}
                 </span>
-                RLUSD via HTTP 402 / x402 on XRPL. Waits on explicit authorize —
+                USDT0 via HTTP 402 / x402 on X Layer. Waits on explicit authorize —
                 catalog copy cannot retarget pay.
               </p>
             </div>

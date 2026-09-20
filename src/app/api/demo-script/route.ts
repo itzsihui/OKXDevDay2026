@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 /**
  * One-click AgentiX lifecycle for judges:
- * onboard → XRPL x402 → VISA card rail.
+ * onboard → X Layer x402 → VISA card rail.
  */
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
@@ -71,10 +71,10 @@ export async function POST(request: Request) {
   return Response.json({
     ok: true,
     pitch: {
-      avalanche: "HTTP 402 → RLUSD on XRPL Testnet → PAYMENT-SIGNATURE → 200",
-      xrpl: "HTTP 402 → RLUSD on XRPL Testnet → facilitator settle → 200",
+      xlayer: "HTTP 402 → USDT0 on X Layer Testnet → PAYMENT-SIGNATURE → 200",
       straitsx: "Scoped virtual card mandate → checkout → burn",
       aws: "Bedrock agents + API Gateway/Lambda/DynamoDB protocol slice",
+      okx: "OKX FacilitatorClient verify + settle on eip155:1952",
     },
     merchant,
     x402,

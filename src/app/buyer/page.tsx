@@ -620,7 +620,7 @@ export default function BuyerPage() {
               const label = p.quarantined
                 ? `${p.storeSlug}:${p.id.split(":")[1] || p.id}`
                 : p.title;
-              return `${label} @ /s/${p.storeSlug} · ${p.price} RLUSD (score ${p.score})${p.quarantined ? " · quarantined" : ""}`;
+              return `${label} @ /s/${p.storeSlug} · ${p.price} USDT0 (score ${p.score})${p.quarantined ? " · quarantined" : ""}`;
             }),
           });
           return {
@@ -956,7 +956,7 @@ export default function BuyerPage() {
             title:
               rail === "visa"
                 ? `Settling Visa · ${lines.length} locked quote(s)`
-                : `Settling RLUSD x402 · ${lines.length} locked quote(s)`,
+                : `Settling USDT0 x402 · ${lines.length} locked quote(s)`,
             status: "active",
             capability: "privileged",
             description: "Authorized — each SKU settles on its locked quote…",
@@ -1032,7 +1032,7 @@ export default function BuyerPage() {
               });
               if (explorer) {
                 links.push({
-                  label: `XRPL explorer · ${skuId}`,
+                  label: `X Layer explorer · ${skuId}`,
                   href: explorer,
                 });
               }

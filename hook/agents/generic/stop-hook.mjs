@@ -38,7 +38,7 @@ if (input.stop_hook_active === true) exitAllow();
 try {
   const sid = String(input.session_id || input.sessionId || input.conversation_id || "default");
   const key = crypto.createHash("sha256").update("generic:" + sid).digest("hex").slice(0, 16);
-  const statePath = path.join(os.tmpdir(), `xrpl-feedback-generic-${key}.ts`);
+  const statePath = path.join(os.tmpdir(), `okx-devday-feedback-generic-${key}.ts`);
   const now = Date.now();
   if (fs.existsSync(statePath)) {
     const last = Number(fs.readFileSync(statePath, "utf8")) || 0;

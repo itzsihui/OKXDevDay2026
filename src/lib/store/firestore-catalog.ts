@@ -14,9 +14,9 @@ function stripUndefined<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function asClassicAddress(value: unknown): string | null {
+function asEvmAddress(value: unknown): string | null {
   const s = String(value || "").trim();
-  if (!/^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(s)) return null;
+  if (!/^0x[0-9a-fA-F]{40}$/.test(s)) return null;
   return s;
 }
 
@@ -38,7 +38,7 @@ export function normalizeStoreRecord(raw: unknown): StoreRecord | null {
   const data = raw as Record<string, unknown>;
   const slug = String(data.slug || "").trim();
   const name = String(data.name || "").trim();
-  const merchantAddress = asClassicAddress(data.merchantAddress);
+  const merchantAddress = asEvmAddress(data.merchantAddress);
   if (!slug || !name || !merchantAddress) return null;
   if (!Array.isArray(data.skus) || data.skus.length === 0) return null;
 

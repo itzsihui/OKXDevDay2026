@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Prints the shared XRPL feedback instruction with the resolved submit.mjs
+// Prints the shared X Layer feedback instruction with the resolved submit.mjs
 // path. Use this to get the exact text to paste into an agent's instructions
 // or rules file when that agent has no stop hook that can inject.
 //

@@ -10,7 +10,7 @@ const BUYER_PLACEHOLDERS = [
   "I want a black linen shirt in M",
   "Need jeans 30x32 and a top to match",
   "Find me something for dinner, not the gym",
-  "Authorize RLUSD — show me the locked quote",
+  "Authorize USDT0 — show me the locked quote",
 ];
 
 const SELLER_WORDS =

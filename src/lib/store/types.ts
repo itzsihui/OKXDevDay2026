@@ -31,7 +31,7 @@ export type StoreRecord = {
   /** Firebase merchant uid that owns this store. */
   ownerUid?: string;
   merchantDisplayName?: string;
-  /** Crypto receiving wallet (x402 payTo) — XRPL classic r… address. */
+  /** Crypto receiving wallet (x402 payTo) — EVM 0x… address on X Layer. */
   merchantAddress: string;
   /** Visa/fiat receiving account snapshot for card rail settlement display. */
   visaReceive?: StoreVisaReceive;

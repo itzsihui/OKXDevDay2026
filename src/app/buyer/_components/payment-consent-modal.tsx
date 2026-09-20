@@ -80,12 +80,12 @@ export function PaymentConsentModal({
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-foreground/55">Amount</dt>
-              <dd className="font-medium">{product.price} RLUSD</dd>
+              <dd className="font-medium">{product.price} USDT0</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-foreground/55">Rail</dt>
               <dd className="text-right">
-                {isVisa ? "Visa (agent-authorized card)" : "RLUSD · XRPL Testnet x402"}
+                {isVisa ? "Visa (agent-authorized card)" : "USDT0 · X Layer Testnet x402"}
               </dd>
             </div>
           </dl>
@@ -93,15 +93,15 @@ export function PaymentConsentModal({
           <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5 text-[13px] leading-relaxed text-foreground/75">
             {isVisa ? (
               <>
-                Spend cap ≥ <strong>{product.price}</strong> RLUSD · merchant{" "}
+                Spend cap ≥ <strong>{product.price}</strong> USDT0 · merchant{" "}
                 <span className="font-mono">{product.storeSlug}</span> · mandate
                 TTL ~15 min. Agent will charge your authorized virtual card —
                 you confirm once.
               </>
             ) : (
               <>
-                On-chain settlement via x402 on XRPL Testnet: expect HTTP 402,
-                transfer <strong>{product.price}</strong> RLUSD to the merchant,
+                On-chain settlement via x402 on X Layer Testnet: expect HTTP 402,
+                transfer <strong>{product.price}</strong> USDT0 to the merchant,
                 then complete with PAYMENT-SIGNATURE. No redirect out of chat.
               </>
             )}

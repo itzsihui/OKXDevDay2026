@@ -4,7 +4,7 @@
 // VS Code's agent hooks mirror Claude Code's: a Stop event fires when the
 // agent session ends, the event arrives as JSON on stdin, and exit 2 with
 // stderr surfaces text to the model. VS Code reads hooks from ~/.copilot/hooks,
-// .github/hooks/*.json, or a .claude/settings.json. We inject the shared XRPL
+// .github/hooks/*.json, or a .claude/settings.json. We inject the shared X Layer
 // feedback instruction via exit 2 + stderr, and VS Code's own model acts on it
 // and runs submit.mjs. No external LLM is called.
 //
@@ -44,7 +44,7 @@ if (input.stop_hook_active === true) exitAllow();
 try {
   const sid = String(input.session_id || input.sessionId || "default");
   const key = crypto.createHash("sha256").update("vscode:" + sid).digest("hex").slice(0, 16);
-  const statePath = path.join(os.tmpdir(), `xrpl-feedback-vscode-${key}.ts`);
+  const statePath = path.join(os.tmpdir(), `okx-devday-feedback-vscode-${key}.ts`);
   const now = Date.now();
   if (fs.existsSync(statePath)) {
     const last = Number(fs.readFileSync(statePath, "utf8")) || 0;

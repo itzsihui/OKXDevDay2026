@@ -224,7 +224,7 @@ export function TransactionHistory({
                 <p className="truncate font-medium text-foreground">{e.title}</p>
                 <p className="shrink-0 font-mono text-sm text-foreground">
                   {e.amount}{" "}
-                  <span className="text-foreground/45">RLUSD</span>
+                  <span className="text-foreground/45">USDT0</span>
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/55">
@@ -258,7 +258,7 @@ export function TransactionHistory({
                     rel="noreferrer"
                     className="font-mono text-primary underline-offset-2 hover:underline"
                   >
-                    XRPL explorer {shortHash(e.explorerUrl)}
+                    X Layer explorer {shortHash(e.explorerUrl)}
                   </a>
                 ) : null}
                 {e.rail === "straitsx-card" && e.cardOpaqueId ? (

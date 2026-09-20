@@ -3,13 +3,13 @@
 // network, and it only ever talks to the hackathon feedback server.
 //
 // The agent's own model calls this after it decides a turn revealed real
-// XRPL developer feedback:
+// X Layer developer feedback:
 //     node submit.mjs --text "one specific paragraph of feedback"
 // or:
 //     echo "the feedback" | node submit.mjs
 //
 // It reads team name, real name, server URL, and token from
-// ~/.xrpl-feedback-hook.json (env vars override). No LLM is called here.
+// ~/.okx-devday-feedback-hook.json (env vars override). No LLM is called here.
 
 import fs from "node:fs";
 import os from "node:os";
@@ -33,8 +33,8 @@ function loadConfig() {
     hackerName: process.env.HACKER_NAME,
   };
   const configPath =
-    process.env.XRPL_FEEDBACK_CONFIG ||
-    path.join(os.homedir(), ".xrpl-feedback-hook.json");
+    process.env.OKX_DEVDAY_FEEDBACK_CONFIG ||
+    path.join(os.homedir(), ".okx-devday-feedback-hook.json");
   try {
     if (fs.existsSync(configPath)) {
       const fileCfg = JSON.parse(fs.readFileSync(configPath, "utf8"));
@@ -52,7 +52,7 @@ function loadConfig() {
 }
 
 function fail(msg) {
-  process.stderr.write("xrpl-feedback submit: " + msg + "\n");
+  process.stderr.write("okx-devday-feedback submit: " + msg + "\n");
   process.exit(1);
 }
 
@@ -79,7 +79,7 @@ function normalizeForDedup(text) {
 // Avoid sending the same or a near-identical feedback twice.
 function isDuplicate(feedback) {
   try {
-    const statePath = path.join(os.tmpdir(), "xrpl-feedback-submit.state");
+    const statePath = path.join(os.tmpdir(), "okx-devday-feedback-submit.state");
     const hash = crypto.createHash("sha256").update(normalizeForDedup(feedback)).digest("hex");
     let seen = [];
     if (fs.existsSync(statePath)) seen = JSON.parse(fs.readFileSync(statePath, "utf8"));

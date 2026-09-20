@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Claude Code Stop hook.
 //
-// Fires when Claude finishes a turn. It injects the shared XRPL feedback
+// Fires when Claude finishes a turn. It injects the shared X Layer feedback
 // instruction back into Claude by writing it to stderr and exiting 2, which
 // tells Claude to keep going and act on it. Claude's own model then judges the
 // turn and, if warranted, runs submit.mjs. No external LLM is called.

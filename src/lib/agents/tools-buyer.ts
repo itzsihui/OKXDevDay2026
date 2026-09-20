@@ -1,8 +1,11 @@
-import { Wallet } from "xrpl";
-import {
-  XRPLPresignedPaymentPayer,
-  type PaymentRequirements,
-} from "x402-xrpl";
+import { privateKeyToAccount } from "viem/accounts";
+import { x402Client } from "@okxweb3/x402-core/client";
+import { encodePaymentSignatureHeader } from "@okxweb3/x402-core/http";
+import type {
+  PaymentRequired,
+  PaymentRequirements,
+} from "@okxweb3/x402-core/types";
+import { ExactEvmScheme } from "@okxweb3/x402-evm/exact/client";
 import { resolveBuyerTarget } from "@/lib/agents/discover";
 import { config, explorerTx, toAtomic, toPaymentAmount } from "@/lib/config";
 import { emit } from "@/lib/protocol/events";
@@ -33,7 +36,7 @@ export type PayQuote = {
 export { extractRequestedProduct } from "@/lib/agents/discover";
 
 /**
- * Deterministic x402 handshake on XRPL Testnet (RLUSD).
+ * Deterministic x402 handshake on X Layer (USDT0).
  * Prefer a locked quote (slug+skuId+price). Fuzzy message/product matching
  * remains only for legacy demo paths without a quote.
  */
@@ -124,8 +127,7 @@ export async function payX402Tool(args: {
       buyerUid,
     }),
   });
-  const challenge = (await first.json()) as {
-    accepts?: PaymentRequirements[];
+  const challenge = (await first.json()) as PaymentRequired & {
     error?: string;
   };
   steps.push({
@@ -138,13 +140,13 @@ export async function payX402Tool(args: {
     return { steps };
   }
 
-  const accept = challenge.accepts?.[0];
+  const accept = challenge.accepts?.[0] as PaymentRequirements | undefined;
   if (!accept) {
     steps.push({ type: "error", text: "402 missing accepts[]" });
     return { steps };
   }
 
-  if (accept.payTo.trim() !== expectedPayTo) {
+  if (accept.payTo.trim().toLowerCase() !== expectedPayTo.toLowerCase()) {
     steps.push({
       type: "error",
       text: `Capability check failed: 402 payTo ${accept.payTo} does not match locked merchant ${expectedPayTo}`,
@@ -165,11 +167,10 @@ export async function payX402Tool(args: {
     return { steps };
   }
 
-  const offerAtomic = toAtomic(accept.amount);
-  if (offerAtomic !== expectedAtomic) {
+  if (accept.amount !== expectedAtomic) {
     steps.push({
       type: "error",
-      text: `Capability check failed: 402 amount ${accept.amount} does not match locked price ${expectedPrice} ${config.tokenSymbol} (${expectedAmount})`,
+      text: `Capability check failed: 402 amount ${accept.amount} does not match locked price ${expectedPrice} ${config.tokenSymbol} (${expectedAmount} → ${expectedAtomic} atomic)`,
     });
     return { steps };
   }
@@ -179,7 +180,8 @@ export async function payX402Tool(args: {
     text: "Capability checks passed: payTo + amount match locked quote",
   });
 
-  if (!config.buyerSeed) {
+  const buyerKey = config.buyerPrivateKey;
+  if (!buyerKey) {
     emit({
       status: 402,
       method: "POST",
@@ -187,40 +189,30 @@ export async function payX402Tool(args: {
       store: slug,
       orderId,
       rail: "x402",
-      message: "402 unpaid: XRPL_BUYER_SEED missing, cannot sign on XRPL Testnet",
+      message: "402 unpaid: BUYER_PRIVATE_KEY missing, cannot sign on X Layer",
     });
     steps.push({
       type: "error",
-      text: `402 is the challenge. Add XRPL_BUYER_SEED + funded ${config.tokenSymbol} (trust line) on XRPL Testnet, then Buy again.`,
+      text: `402 is the challenge. Add BUYER_PRIVATE_KEY + funded ${config.tokenSymbol} on X Layer (${config.network}), then Buy again.`,
     });
     return { steps, receipt: challenge as BuyerReceipt };
   }
 
-  let wallet: Wallet;
-  try {
-    wallet = Wallet.fromSeed(config.buyerSeed);
-  } catch {
-    steps.push({ type: "error", text: "Invalid XRPL_BUYER_SEED" });
-    return { steps, receipt: challenge as BuyerReceipt };
-  }
+  const account = privateKeyToAccount(buyerKey);
 
   steps.push({
     type: "chain",
-    text: `Signing ${config.tokenSymbol} Payment ${accept.amount} → ${accept.payTo} on XRPL Testnet (${wallet.classicAddress})`,
+    text: `Signing ${config.tokenSymbol} Payment ${accept.amount} atomic → ${accept.payTo} on ${config.network} (${account.address})`,
   });
 
   let paymentHeader: string;
   try {
-    const payer = new XRPLPresignedPaymentPayer({
-      wallet,
-      network: config.network === "xrpl:0" || config.network === "xrpl:2"
-        ? config.network
-        : "xrpl:1",
-      wsUrl: config.wsUrl,
-      invoiceBinding: "memos",
-    });
-    const prepared = await payer.preparePayment(accept);
-    paymentHeader = prepared.paymentHeader;
+    const client = new x402Client().register(
+      config.network,
+      new ExactEvmScheme(account, { rpcUrl: config.rpcUrl }),
+    );
+    const payload = await client.createPaymentPayload(challenge);
+    paymentHeader = encodePaymentSignatureHeader(payload);
   } catch (error) {
     const reason = error instanceof Error ? error.message : "sign failed";
     emit({
@@ -236,7 +228,7 @@ export async function payX402Tool(args: {
     return { steps, receipt: challenge as BuyerReceipt };
   }
 
-  steps.push({ type: "chain", text: "Presigned Payment blob ready" });
+  steps.push({ type: "chain", text: "Signed PAYMENT-SIGNATURE ready" });
 
   const second = await fetch(`${base}/buy`, {
     method: "POST",

@@ -1,47 +1,59 @@
-export type ChainNetwork = "xrpl:1" | "xrpl:0" | "xrpl:2";
+export type ChainNetwork = "eip155:1952" | "eip155:196";
 
-/** Testnet RLUSD currency code (40-hex) and issuer. */
-export const RLUSD_CURRENCY =
-  "524C555344000000000000000000000000000000";
-export const RLUSD_TESTNET_ISSUER = "rQhWct2fv4Vc4KRjRgMrxa8xPN9Zx9iLKV";
-export const XRPL_SOURCE_TAG = 804681468;
+/** X Layer Testnet USDT0 (EIP-3009) — from @okxweb3/x402-evm defaults. */
+export const USDT0_TESTNET = "0x9e29b3aada05bf2d2c827af80bd28dc0b9b4fb0c";
+/** X Layer Mainnet USDT0. */
+export const USDT0_MAINNET = "0x779ded0c9e1022225f8e0630b35a9b54be713736";
 
 function env(name: string, fallback: string) {
   return process.env[name] || fallback;
 }
 
+function normalizePrivateKey(
+  raw: string | undefined,
+): `0x${string}` | undefined {
+  const trimmed = raw?.trim().replace(/^["']|["']$/g, "");
+  if (!trimmed) return undefined;
+  const hex = trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hex)) return undefined;
+  return hex as `0x${string}`;
+}
+
 export const config = {
-  rpcUrl: env("XRPL_RPC_URL", "https://s.altnet.rippletest.net:51234/"),
-  wsUrl: env("XRPL_WS_URL", "wss://s.altnet.rippletest.net:51233"),
-  network: env("XRPL_NETWORK", "xrpl:1") as ChainNetwork,
-  facilitatorUrl: env(
-    "XRPL_FACILITATOR_URL",
-    "https://xrpl-facilitator-testnet.t54.ai",
-  ),
-  /** @deprecated Use network; retained for any leftover chainId reads. */
-  chainId: 1,
-  tokenAddress: env("TOKEN_ADDRESS", RLUSD_CURRENCY),
-  tokenIssuer: env("TOKEN_ISSUER", RLUSD_TESTNET_ISSUER),
-  tokenSymbol: env("TOKEN_SYMBOL", "RLUSD"),
+  rpcUrl: env("XLAYER_RPC_URL", "https://testrpc.xlayer.tech/terigon"),
+  network: env("XLAYER_NETWORK", "eip155:1952") as ChainNetwork,
+  /** CAIP-2 chain id number (1952 testnet / 196 mainnet). */
+  get chainId() {
+    const n = this.network.split(":")[1];
+    return Number(n) || 1952;
+  },
+  tokenAddress: env("TOKEN_ADDRESS", USDT0_TESTNET),
+  tokenSymbol: env("TOKEN_SYMBOL", "USDT0"),
   tokenDecimals: Number(env("TOKEN_DECIMALS", "6")),
-  /** Demo unit price in RLUSD on XRPL Testnet. */
+  /** Demo unit price in USDT0 on X Layer. */
   demoUnitPriceXsgd: "0.01",
   merchantAddress: env(
     "MERCHANT_ADDRESS",
-    "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "0x0000000000000000000000000000000000000001",
   ),
-  /** Buyer wallet seed for server-side x402 settle (family seed / secret). */
-  get buyerSeed() {
-    const raw =
-      process.env.XRPL_BUYER_SEED?.trim().replace(/^["']|["']$/g, "") ||
-      process.env.BUYER_SEED?.trim().replace(/^["']|["']$/g, "");
-    return raw || undefined;
-  },
-  /** @deprecated Prefer buyerSeed — kept so legacy card MCP helpers compile. */
+  /** Buyer EVM private key for server-side x402 settle. */
   get buyerPrivateKey() {
-    return undefined as `0x${string}` | undefined;
+    return normalizePrivateKey(
+      process.env.BUYER_PRIVATE_KEY || process.env.XLAYER_BUYER_PRIVATE_KEY,
+    );
   },
-  explorerBase: env("EXPLORER_BASE", "https://testnet.xrpl.org"),
+  /** @deprecated Alias — prefer buyerPrivateKey. */
+  get buyerSeed() {
+    return this.buyerPrivateKey;
+  },
+  okxApiKey: env("OKX_API_KEY", ""),
+  okxSecretKey: env("OKX_SECRET_KEY", ""),
+  okxPassphrase: env("OKX_PASSPHRASE", ""),
+  okxBaseUrl: env("OKX_BASE_URL", "https://web3.okx.com"),
+  explorerBase: env(
+    "EXPLORER_BASE",
+    "https://www.okx.com/web3/explorer/xlayer-test",
+  ),
   /** Optional legacy Card MCP URL — unused when empty; Visa rail uses local mandate. */
   straitsxMcpUrl: env("STRAITSX_MCP_URL", ""),
   get straitsxMcpToken() {
@@ -67,10 +79,11 @@ export const config = {
 };
 
 export function explorerTx(hash: string) {
-  return `${config.explorerBase}/transactions/${hash}`;
+  const base = config.explorerBase.replace(/\/$/, "");
+  return `${base}/tx/${hash}`;
 }
 
-/** Decimal RLUSD amount string for XRPL IOU Payment / x402 `amount`. */
+/** Decimal USDT0 amount string for display / locked quotes. */
 export function toPaymentAmount(price: string, quantity = 1) {
   const n = Number(price) * quantity;
   if (!Number.isFinite(n) || n <= 0) {
@@ -79,7 +92,7 @@ export function toPaymentAmount(price: string, quantity = 1) {
   return n.toFixed(config.tokenDecimals).replace(/\.?0+$/, "") || n.toFixed(2);
 }
 
-/** Integer micro-units for order storage / display helpers. */
+/** Integer micro-units for x402 `amount` and order storage. */
 export function toAtomic(price: string) {
   const n = Number(price);
   if (!Number.isFinite(n) || n <= 0) {

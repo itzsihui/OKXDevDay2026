@@ -2,14 +2,14 @@
 
 # Borneo
 
-[![XRPL](https://img.shields.io/badge/XRPL%20Testnet-RLUSD%20x402-23292F?style=for-the-badge)](#borneo)
-[![Protocol](https://img.shields.io/badge/Open%20protocol-any%20HTTP%20agent-0B6E4F?style=for-the-badge)](#borneo)
+[![X Layer](https://img.shields.io/badge/X%20Layer-USDT0%20x402-000000?style=for-the-badge)](#borneo)
+[![Onchain OS](https://img.shields.io/badge/OKX%20Onchain%20OS-A2MCP-0B6E4F?style=for-the-badge)](#borneo)
+[![Protocol](https://img.shields.io/badge/Open%20protocol-any%20HTTP%20agent-23292F?style=for-the-badge)](#borneo)
 [![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-agents-412991?style=for-the-badge&logo=openai&logoColor=white)](#try-it)
 
-**Go agent-ready. Publish once. Any agent can shop you — not only ChatGPT or Claude.**
+**Go agent-ready. Publish once. Any agent can shop you — settle USDT0 on X Layer.**
 
-Landing pitch (merchant-first) → [http://localhost:3000](http://localhost:3000) · Architecture → [`architecture.drawio`](./architecture.drawio)
+Landing → [http://localhost:3000](http://localhost:3000) · OKX docs map → [`docs/okx-onchainos.md`](./docs/okx-onchainos.md)
 
 </div>
 
@@ -19,87 +19,32 @@ Landing pitch (merchant-first) → [http://localhost:3000](http://localhost:3000
 
 Agent commerce is happening — but **catalogs are walled**.
 
-Stripe-style / Instant Checkout–class listings often live where **ChatGPT** and **Claude** can reach them. Procurement bots, local LLMs, personal agents, and custom runners get **blocked**. Merchants who only list there are invisible to the long tail of agents.
-
-### Impact (structural)
-
-| | |
-|---|---|
-| **2** | Consumer chat apps get the closed catalog path (ChatGPT, Claude) |
-| **0** | Open HTTP surface for everyone else on that same path |
-| **∞** | Agent types locked out — procurement, local LLMs, personal agents, Cursor/custom |
-| **1 → ~0.1** | For every **1** buyer agent that wants to shop, open protocol still exposes on the order of **~0.1** agent-readable catalogs — most inventory is HTML-only or trapped in those two apps |
-
-> Numbers are structural scarcity, not invented GMV. The bottleneck is **open, machine-readable supply**, not demand for shopping agents.
-
-### Why the closed path loses
-
-1. Reach is **rented from two apps** — not owned as a protocol  
-2. Personal / on-prem / procurement agents **cannot shop the same listings**  
-3. Merchants stay **invisible** to the long tail of agents  
-
-```mermaid
-flowchart TB
-  subgraph closed [Closed_catalog_gate]
-    Merchants[Merchant_catalog] --> StripeSurface[Stripe_or_partner_surface]
-    StripeSurface --> ChatGPT[ChatGPT_app]
-    StripeSurface --> Claude[Claude_browser_or_app]
-    LockedOut[Procurement_local_personal_agents] -.->|blocked| StripeSurface
-  end
-```
+Closed Instant Checkout–class listings often live where only a few chat apps can reach them. Procurement bots, local LLMs, personal agents, and custom runners get **blocked**. Merchants who only list there are invisible to the long tail of agents.
 
 ---
 
-## Borneo
+## Borneo @ OKX Dev Day
 
-**Open protocol. Any agent. Same settle rails.**
+**Open protocol. Any agent. Settle on X Layer.**
 
-Publish once → humans shop in chat → procurement / local / personal agents hit the same endpoints → settle **RLUSD** via **HTTP 402 / x402** on XRPL Testnet.
+Publish once → humans shop in chat → any HTTP agent hits the same endpoints → settle **USDT0** via **HTTP 402 / x402** on **X Layer**, facilitated by **OKX Onchain OS**.
 
 ```mermaid
 flowchart LR
   publish[Publish_registry_llms_txt] --> search[GET_api_search]
   search --> anyAgent[Any_HTTP_agent]
-  anyAgent --> settle[RLUSD_x402]
+  anyAgent --> settle[USDT0_x402_XLayer]
 ```
 
 | Step | Surface |
 |---|---|
 | Index | `/registry.json`, `/llms.txt`, `/s/{slug}/llms.txt` |
-| Discover | `GET /api/search?q=…` (same ranker for buyer UI + external agents) |
-| Buy | `POST /s/{slug}/buy` → **402** → authorize → settle |
-| Skill | [`.agents/skills/borneo-registry-shop`](./.agents/skills/borneo-registry-shop/SKILL.md) |
+| Discover | `GET /api/search?q=…` |
+| Buy (A2MCP-shaped) | `POST /s/{slug}/buy` → **402** → authorize → settle |
+| Skills | [`.agents/skills/borneo-registry-shop`](./.agents/skills/borneo-registry-shop/SKILL.md), [okx-devday-resources](./.agents/skills/okx-devday-resources/SKILL.md), Onchain OS pack |
+| MCP | Cursor: [`.cursor/mcp.json`](./.cursor/mcp.json) → `onchainos mcp` |
 
 **Do not scrape HTML.** Catalog prose never enters the pay path — settle only sees a locked quote (`storeSlug`, `skuId`, `price`, `merchantAddress`).
-
----
-
-## What you get
-
-### Merchant-first
-
-- Talk inventory, drop CSV, or paste a store URL → live agent storefront  
-- Bind XRPL wallet → list on the open registry  
-- Reach **every** HTTP agent, not two chat apps  
-
-### Buyer / any agent
-
-- Fashion salesperson clarifies intent, then ranks via `/api/search`  
-- Authorize in chat → RLUSD x402 on XRPL  
-- Injection-shaped listings quarantined; payee/amount stay locked  
-
-### Governance
-
-Buyer spend limits (per tx / day / week). Merchant rails, price floors, market listing — policies that gate checkout.
-
-```mermaid
-flowchart LR
-  buyerPolicy[BuyerSpendLimits] --> auth[Authorize]
-  merchantPolicy[MerchantRailsAndFloors] --> auth
-  discover[Discover] --> quarantine[Quarantine]
-  quarantine --> auth
-  auth --> settle[RLUSD_x402]
-```
 
 ---
 
@@ -108,44 +53,39 @@ flowchart LR
 ```bash
 npm install
 cp .env.example .env
-# Fill XRPL_BUYER_SEED, MERCHANT_ADDRESS, Firebase, OPENAI — see scripts/setup-xrpl-rlusd.md
+# Fill BUYER_PRIVATE_KEY, MERCHANT_ADDRESS, OKX_*, Firebase, OPENAI
+# See scripts/setup-xlayer-usdt0.md
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
 | Path | What it is |
 |---|---|
-| `/` | Landing — problem → closed catalogs → open protocol |
+| `/` | Landing |
 | `/merchant` · `/onboard` | Seller chat → publish agent storefront |
-| `/buyer` | Fashion chat → RLUSD x402 settle |
-| `/market` | Human + agent marketplace index |
-| `/api/search?q=` | Intent search (agents + buyer demo) |
+| `/buyer` | Fashion chat → Visa or USDT0 x402 settle |
+| `/market` | Marketplace index |
+| `/api/search?q=` | Intent search |
 | `/registry.json` | Network store index |
-| `/s/{slug}/llms.txt` | Per-store agent discovery |
 
----
-
-## Get running
-
-### Prerequisites
-
-- Node.js 20+ and npm  
-- **OpenAI API key** — buyer / merchant agents (+ Whisper)  
-- **Firebase** web config — auth / Firestore  
-- **XRPL Testnet** — funded buyer seed + RLUSD trust line (see [`scripts/setup-xrpl-rlusd.md`](./scripts/setup-xrpl-rlusd.md))
-
-Without `OPENAI_API_KEY`, chat falls back to deterministic tools. Protocol endpoints (`llms.txt`, `/api/search`, HTTP **402**) still work.
-
-### Env (see [`.env.example`](./.env.example))
+### Env (see [`.env.example`](.env.example))
 
 | Var | Purpose |
 |---|---|
 | `OPENAI_API_KEY` | Agents + embeddings search |
 | `NEXT_PUBLIC_FIREBASE_*` | Buyer + merchant auth |
-| `XRPL_BUYER_SEED` | Server-side x402 settle (`s…`) |
-| `MERCHANT_ADDRESS` | Default merchant payTo (`r…`) |
-| `XRPL_*` / `TOKEN_*` | Testnet RPC, facilitator, RLUSD issuer |
+| `BUYER_PRIVATE_KEY` | Server-side x402 settle (`0x…`) |
+| `MERCHANT_ADDRESS` | Default merchant payTo (`0x…`) |
+| `OKX_API_KEY` / `OKX_SECRET_KEY` / `OKX_PASSPHRASE` | OKX facilitator |
+| `XLAYER_NETWORK` | `eip155:1952` (testnet) or `eip155:196` |
+
+### Onchain OS MCP
+
+```bash
+npx skills add okx/onchainos-skills --yes
+# Install CLI (optional): npx -y @okxweb3/onchainos-installer install
+```
+
+Cursor loads `onchainos` from `.cursor/mcp.json` once the CLI is on your PATH and OKX credentials are set.
 
 ### Scripts
 

@@ -1,17 +1,19 @@
 import {
-  FacilitatorClient,
+  OKXFacilitatorClient,
+} from "@okxweb3/x402-core";
+import {
   encodePaymentRequiredHeader,
   decodePaymentSignatureHeader,
-  type PaymentPayload,
-  type PaymentRequired,
-  type PaymentRequirements,
-} from "x402-xrpl";
+} from "@okxweb3/x402-core/http";
+import type {
+  PaymentPayload,
+  PaymentRequired,
+  PaymentRequirements,
+} from "@okxweb3/x402-core/types";
 import {
   config,
   explorerTx,
   toAtomic,
-  toPaymentAmount,
-  XRPL_SOURCE_TAG,
 } from "@/lib/config";
 import type { Sku, StoreRecord } from "@/lib/store/types";
 
@@ -24,22 +26,20 @@ export function buildPaymentRequired(
   orderId: string,
   quantity: number,
 ): PaymentRequired {
-  const amount = toPaymentAmount(sku.price, quantity);
-  const invoiceId = `INV-${orderId}`;
+  const amount = (
+    BigInt(toAtomic(sku.price)) * BigInt(quantity)
+  ).toString();
   const accept: PaymentRequirements = {
     scheme: "exact",
     network: config.network,
     amount,
     asset: config.tokenAddress,
     payTo: store.merchantAddress,
-    maxTimeoutSeconds: 600,
+    maxTimeoutSeconds: 300,
     extra: {
-      name: config.tokenSymbol,
-      decimals: config.tokenDecimals,
+      name: "USD₮0",
+      version: "1",
       orderId,
-      invoiceId,
-      sourceTag: XRPL_SOURCE_TAG,
-      issuer: config.tokenIssuer,
     },
   };
   return {
@@ -84,38 +84,62 @@ export function parsePaymentSignature(header: string): PaymentPayload | null {
   return null;
 }
 
+function hasOkxCredentials() {
+  return Boolean(
+    config.okxApiKey && config.okxSecretKey && config.okxPassphrase,
+  );
+}
+
 function facilitator() {
-  return new FacilitatorClient({ baseUrl: config.facilitatorUrl });
+  if (!hasOkxCredentials()) {
+    throw new Error(
+      "OKX facilitator credentials missing. Set OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE.",
+    );
+  }
+  return new OKXFacilitatorClient({
+    apiKey: config.okxApiKey,
+    secretKey: config.okxSecretKey,
+    passphrase: config.okxPassphrase,
+    baseUrl: config.okxBaseUrl,
+    syncSettle: true,
+  });
 }
 
 /**
- * Verify + settle a presigned XRPL Payment via the hosted facilitator.
+ * Verify + settle a signed EVM payment via the OKX facilitator.
  */
 export async function verifyAndSettle(args: {
   paymentHeader: string;
   paymentRequirements: PaymentRequirements;
+  paymentPayload?: PaymentPayload | null;
 }) {
   try {
+    const payload =
+      args.paymentPayload || parsePaymentSignature(args.paymentHeader);
+    if (!payload) {
+      return { ok: false as const, reason: "Invalid PAYMENT-SIGNATURE" };
+    }
+
     const client = facilitator();
-    const verified = await client.verify({
-      paymentHeader: args.paymentHeader,
-      paymentRequirements: args.paymentRequirements,
-    });
+    const verified = await client.verify(payload, args.paymentRequirements);
     if (!verified.isValid) {
       return {
         ok: false as const,
-        reason: verified.invalidReason || "Facilitator rejected payment",
+        reason:
+          verified.invalidReason ||
+          verified.invalidMessage ||
+          "Facilitator rejected payment",
       };
     }
 
-    const settled = await client.settle({
-      paymentHeader: args.paymentHeader,
-      paymentRequirements: args.paymentRequirements,
-    });
+    const settled = await client.settle(payload, args.paymentRequirements);
     if (!settled.success || !settled.transaction) {
       return {
         ok: false as const,
-        reason: settled.errorReason || "Facilitator settle failed",
+        reason:
+          settled.errorReason ||
+          settled.errorMessage ||
+          "Facilitator settle failed",
       };
     }
 
