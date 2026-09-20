@@ -52,6 +52,11 @@ next-env.d.ts
 docs/*.pdf
 architecture.drawio
 
+# speaker / internal pitch (not required to run the app)
+PITCH.md
+PITCH-3MIN-SPEAKER-NOTES.md
+Agentic Storefront Protocol Pitch Document.md
+
 # Vendored Onchain OS skill packs — reinstall with:
 #   npx skills add okx/onchainos-skills --yes
 # Keep only the small project skill: okx-devday-resources
