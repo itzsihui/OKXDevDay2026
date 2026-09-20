@@ -986,6 +986,8 @@ export default function BuyerPage() {
             price: line.price,
             merchantAddress: line.merchantAddress,
             rail,
+            settleAsset: line.settleAsset,
+            settleSymbol: line.settleSymbol,
           };
 
           for (let q = 0; q < line.quantity; q++) {
@@ -1000,6 +1002,8 @@ export default function BuyerPage() {
                     skuId: quote.skuId,
                     price: quote.price,
                     merchantAddress: quote.merchantAddress,
+                    settleAsset: quote.settleAsset,
+                    settleSymbol: quote.settleSymbol,
                   },
                 }),
               });

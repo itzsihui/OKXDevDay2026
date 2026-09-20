@@ -29,17 +29,21 @@ export function buildPaymentRequired(
   const amount = (
     BigInt(toAtomic(sku.price)) * BigInt(quantity)
   ).toString();
+  const asset = (sku.settleAsset || config.tokenAddress).trim();
+  const symbol = (sku.settleSymbol || config.tokenSymbol).trim();
   const accept: PaymentRequirements = {
     scheme: "exact",
     network: config.network,
     amount,
-    asset: config.tokenAddress,
+    asset,
     payTo: store.merchantAddress,
     maxTimeoutSeconds: 300,
     extra: {
-      name: "USD₮0",
+      name: symbol === "USDT0" ? "USD₮0" : symbol,
       version: "1",
       orderId,
+      quoteCurrency: sku.quoteCurrency || symbol,
+      quotePrice: sku.quotePrice || sku.price,
     },
   };
   return {

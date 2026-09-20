@@ -463,5 +463,127 @@ export function sampleMarketStores(
         },
       ],
     },
+    {
+      slug: "atelier-tee",
+      name: "Atelier Tee Co",
+      merchantAddress,
+      listOnMarket: true,
+      createdAt,
+      skus: [
+        {
+          id: "weekend-linen-tee",
+          title: "Weekend Linen Tee / Sand / M",
+          description:
+            "Outfit drop: breathable tee for a full weekend look. Merchant quotes and settles in USDT0.",
+          quantity: 30,
+          price: "0.02",
+          quoteCurrency: "USDT0",
+          quotePrice: "0.02",
+          settleSymbol: "USDT0",
+          attrs: {
+            subcategory: "tops",
+            color: "sand",
+            size: "M",
+            material: "linen",
+            tags: [
+              "weekend-outfit",
+              "outfit-tee",
+              "full-outfit",
+              "tee",
+              "shirt",
+            ],
+          },
+        },
+      ],
+    },
+    {
+      slug: "harbor-caps",
+      name: "Harbor Cap Lab",
+      merchantAddress,
+      listOnMarket: true,
+      createdAt,
+      skus: [
+        {
+          id: "weekend-dad-cap",
+          title: "Weekend Dad Cap / Black / OS",
+          description:
+            "Outfit drop: cap quoted in WETH (merchant display) but settlement converts to USDT0 via OKX DEX — hackathon-safe multi-currency quote.",
+          quantity: 40,
+          price: "0.02",
+          quoteCurrency: "WETH",
+          quotePrice: "0.000008",
+          settleSymbol: "USDT0",
+          attrs: {
+            subcategory: "accessories",
+            color: "black",
+            size: "OS",
+            tags: [
+              "weekend-outfit",
+              "outfit-cap",
+              "full-outfit",
+              "cap",
+              "hat",
+            ],
+          },
+        },
+        {
+          id: "weekend-cap-alt-rail",
+          title: "Harbor Cap · Alt settle rail / Navy / OS",
+          description:
+            "Full-build demo: same outfit piece but x402 settleAsset can target ALT_SETTLE_TOKEN when configured (defaults to USDT0 on testnet).",
+          quantity: 20,
+          price: "0.02",
+          quoteCurrency: "WETH",
+          quotePrice: "0.000008",
+          settleAsset: config.altSettleToken,
+          settleSymbol: config.altSettleSymbol,
+          attrs: {
+            subcategory: "accessories",
+            color: "navy",
+            size: "OS",
+            tags: [
+              "weekend-outfit",
+              "outfit-cap",
+              "full-outfit",
+              "multi-asset",
+              "alt-settle",
+              "cap",
+            ],
+          },
+        },
+      ],
+    },
+    {
+      slug: "stride-kicks",
+      name: "Stride Kicks",
+      merchantAddress,
+      listOnMarket: true,
+      createdAt,
+      skus: [
+        {
+          id: "weekend-court-sneaker",
+          title: "Weekend Court Sneaker / White / 42",
+          description:
+            "Outfit drop: sneakers quoted in OKB; agent routes OKB → USDT0 once for the cart then settles x402.",
+          quantity: 18,
+          price: "0.02",
+          quoteCurrency: "OKB",
+          quotePrice: "0.05",
+          settleSymbol: "USDT0",
+          attrs: {
+            subcategory: "footwear",
+            color: "white",
+            size: "42",
+            tags: [
+              "weekend-outfit",
+              "outfit-sneakers",
+              "full-outfit",
+              "sneakers",
+              "shoes",
+            ],
+          },
+        },
+      ],
+    },
   ];
 }

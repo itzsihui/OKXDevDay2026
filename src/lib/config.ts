@@ -30,6 +30,13 @@ export const config = {
   tokenAddress: env("TOKEN_ADDRESS", USDT0_TESTNET),
   tokenSymbol: env("TOKEN_SYMBOL", "USDT0"),
   tokenDecimals: Number(env("TOKEN_DECIMALS", "6")),
+  /**
+   * Optional second settle asset for multi-merchant demos (full build).
+   * Defaults to USDT0 so testnet demos still work; set ALT_SETTLE_TOKEN to a
+   * different EIP-3009 ERC-20 when you have liquidity for that asset.
+   */
+  altSettleToken: env("ALT_SETTLE_TOKEN", USDT0_TESTNET),
+  altSettleSymbol: env("ALT_SETTLE_SYMBOL", "USDT0"),
   /** Demo unit price in USDT0 on X Layer. */
   demoUnitPriceXsgd: "0.01",
   merchantAddress: env(

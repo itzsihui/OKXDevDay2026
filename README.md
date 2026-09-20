@@ -33,9 +33,10 @@ flowchart LR
 | Step | Surface |
 |---|---|
 | Intent | `/buyer` salesperson + `GET /api/search` |
-| Route | `GET /api/liquidity` · OKX DEX native → USDT0 |
+| Route | `GET/POST /api/liquidity` · OKX DEX · outfit liquidity map |
 | Buy (A2MCP-shaped) | `POST /s/{slug}/buy` → **402** → authorize → settle |
 | Own | `/buyer/ownership` · invite `?ref=` boost |
+| Outfit demo | `/s/atelier-tee` · `/s/harbor-caps` · `/s/stride-kicks` |
 | RWA demo | `/s/xlayer-rwa-desk` tokenized claim SKUs |
 | Skills | [`.agents/skills/borneo-registry-shop`](./.agents/skills/borneo-registry-shop/SKILL.md), Onchain OS pack |
 

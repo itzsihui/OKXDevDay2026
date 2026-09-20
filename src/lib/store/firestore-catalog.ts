@@ -71,7 +71,45 @@ export function normalizeStoreRecord(raw: unknown): StoreRecord | null {
         description: String(sku.description || title),
         quantity,
         price: priceNum.toFixed(2),
+        quoteCurrency: sku.quoteCurrency
+          ? String(sku.quoteCurrency).trim()
+          : undefined,
+        quotePrice: sku.quotePrice ? String(sku.quotePrice).trim() : undefined,
+        settleAsset: asEvmAddress(sku.settleAsset) || undefined,
+        settleSymbol: sku.settleSymbol
+          ? String(sku.settleSymbol).trim()
+          : undefined,
         attrs,
+        tokenization:
+          sku.tokenization && typeof sku.tokenization === "object"
+            ? (() => {
+                const t = sku.tokenization as Record<string, unknown>;
+                const kind = String(t.kind || "").trim();
+                const contractAddress = asEvmAddress(t.contractAddress);
+                if (
+                  !contractAddress ||
+                  !["rwa", "tokenized-equity", "fractional-claim", "meme"].includes(
+                    kind,
+                  )
+                ) {
+                  return undefined;
+                }
+                return {
+                  kind: kind as
+                    | "rwa"
+                    | "tokenized-equity"
+                    | "fractional-claim"
+                    | "meme",
+                  contractAddress,
+                  underlying: t.underlying
+                    ? String(t.underlying)
+                    : undefined,
+                  explorerUrl: t.explorerUrl
+                    ? String(t.explorerUrl)
+                    : undefined,
+                };
+              })()
+            : undefined,
       };
     })
     .filter((s): s is NonNullable<typeof s> => Boolean(s));

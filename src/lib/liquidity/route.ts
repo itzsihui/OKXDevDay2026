@@ -44,6 +44,10 @@ export type LiquidityQuote = {
   fromTokenAddress: string;
   toTokenAddress: string;
   routeSummary: string;
+  /** Display pool pair e.g. OKB/USDT0 */
+  poolLabel?: string;
+  /** Hop labels from aggregator when available */
+  hops?: string[];
   priceImpact?: string;
   raw?: unknown;
 };
@@ -73,6 +77,7 @@ function publicClient() {
 export async function readBuyerBalances(
   neededAtomic: string,
   address?: `0x${string}`,
+  tokenAddress: string = config.tokenAddress,
 ): Promise<WalletBalances | null> {
   const buyerKey = config.buyerPrivateKey;
   if (!buyerKey && !address) return null;
@@ -83,7 +88,7 @@ export async function readBuyerBalances(
   const [nativeWei, tokenBal] = await Promise.all([
     client.getBalance({ address: account.address }),
     client.readContract({
-      address: config.tokenAddress as `0x${string}`,
+      address: tokenAddress as `0x${string}`,
       abi: ERC20_BALANCE_OF,
       functionName: "balanceOf",
       args: [account.address],
@@ -124,37 +129,45 @@ async function okxGetJson<T>(pathWithQuery: string): Promise<T> {
   return json;
 }
 
-function planQuote(balances: WalletBalances, neededAtomic: string): LiquidityQuote {
+function planQuote(
+  balances: WalletBalances,
+  neededAtomic: string,
+  toTokenAddress = config.tokenAddress,
+  toSymbol = config.tokenSymbol,
+): LiquidityQuote {
   const shortfallHuman = formatUnits(
     BigInt(balances.shortfallAtomic || neededAtomic),
     config.tokenDecimals,
   );
-  // Rough demo sizing: use a small slice of native for the plan display.
   const nativePlan =
     Number(balances.nativeHuman) > 0.002
       ? "0.002"
       : balances.nativeHuman || "0";
+  const poolLabel = `OKB/${toSymbol}`;
   return {
     mode: "plan",
     chainIndex: chainIndexForDex(),
     fromSymbol: "OKB",
-    toSymbol: config.tokenSymbol,
+    toSymbol,
     fromAmountHuman: nativePlan,
     toAmountHuman: shortfallHuman,
     fromTokenAddress: NATIVE_TOKEN,
-    toTokenAddress: config.tokenAddress,
-    routeSummary: `Plan: OKB → ${config.tokenSymbol} on X Layer (${config.network}) via OKX DEX aggregator`,
+    toTokenAddress,
+    poolLabel,
+    hops: [`OKB → ${toSymbol} (OKX DEX aggregator · plan)`],
+    routeSummary: `Plan: OKB → ${toSymbol} on X Layer (${config.network}) via pool [${poolLabel}]`,
   };
 }
 
 export async function quoteNativeToUsdt0(
   balances: WalletBalances,
   neededAtomic: string,
+  toTokenAddress = config.tokenAddress,
+  toSymbol = config.tokenSymbol,
 ): Promise<LiquidityQuote> {
-  const fallback = planQuote(balances, neededAtomic);
+  const fallback = planQuote(balances, neededAtomic, toTokenAddress, toSymbol);
   if (!hasOkxDexCredentials()) return fallback;
 
-  // Estimate native in: prefer small demo amount; scale if balance allows.
   const nativeIn =
     BigInt(balances.nativeWei) > parseEther("0.01")
       ? parseEther("0.01")
@@ -166,7 +179,7 @@ export async function quoteNativeToUsdt0(
     chainIndex,
     amount: nativeIn.toString(),
     fromTokenAddress: NATIVE_TOKEN,
-    toTokenAddress: config.tokenAddress,
+    toTokenAddress,
     swapMode: "exactIn",
   });
   const path = `/api/v6/dex/aggregator/quote?${qs.toString()}`;
@@ -183,18 +196,31 @@ export async function quoteNativeToUsdt0(
     }
     const fromDec = Number(row.fromToken?.decimal ?? 18);
     const toDec = Number(row.toToken?.decimal ?? config.tokenDecimals);
-    const dexName =
-      row.dexRouterList?.[0]?.dexProtocol?.dexName || "OKX DEX";
+    const hops =
+      row.dexRouterList
+        ?.map((d) => d.dexProtocol?.dexName)
+        .filter((n): n is string => Boolean(n)) || [];
+    const dexName = hops[0] || "OKX DEX";
+    const fromSym = row.fromToken?.tokenSymbol || "OKB";
+    const toSym = row.toToken?.tokenSymbol || toSymbol;
+    const poolLabel = `${fromSym}/${toSym}`;
     return {
       mode: "live",
       chainIndex,
-      fromSymbol: row.fromToken?.tokenSymbol || "OKB",
-      toSymbol: row.toToken?.tokenSymbol || config.tokenSymbol,
-      fromAmountHuman: formatUnits(BigInt(row.fromTokenAmount || nativeIn), fromDec),
+      fromSymbol: fromSym,
+      toSymbol: toSym,
+      fromAmountHuman: formatUnits(
+        BigInt(row.fromTokenAmount || nativeIn),
+        fromDec,
+      ),
       toAmountHuman: formatUnits(BigInt(row.toTokenAmount), toDec),
       fromTokenAddress: NATIVE_TOKEN,
-      toTokenAddress: config.tokenAddress,
-      routeSummary: `${row.fromToken?.tokenSymbol || "OKB"} → ${row.toToken?.tokenSymbol || config.tokenSymbol} via ${dexName}`,
+      toTokenAddress,
+      poolLabel,
+      hops: hops.length
+        ? hops.map((h) => `${fromSym} → ${toSym} via ${h}`)
+        : [`${fromSym} → ${toSym} via ${dexName}`],
+      routeSummary: `${fromSym} → ${toSym} via ${dexName} · pool [${poolLabel}]`,
       priceImpact: row.priceImpactPercentage,
       raw,
     };
@@ -289,17 +315,21 @@ export async function executeNativeToUsdt0Swap(
 }
 
 /**
- * Ensure the buyer wallet can cover `price` USDT0 on X Layer.
- * Fail-soft: returns a plan quote when DEX liquidity / keys are missing;
- * only blocks settle when USDT0 is short and no swap could run.
+ * Ensure the buyer wallet can cover `price` of settle token on X Layer.
+ * Fail-soft: returns a plan quote when DEX liquidity / keys are missing.
+ * Pass toTokenAddress/toSymbol for full multi-asset settle (defaults USDT0).
  */
 export async function ensureUsdt0Liquidity(args: {
   price: string;
   quantity?: number;
   /** When true, attempt broadcast if live quote exists. */
   execute?: boolean;
+  toTokenAddress?: string;
+  toSymbol?: string;
 }): Promise<LiquidityRouteResult> {
   const quantity = Math.max(1, args.quantity ?? 1);
+  const toTokenAddress = (args.toTokenAddress || config.tokenAddress).trim();
+  const toSymbol = (args.toSymbol || config.tokenSymbol).trim();
   let neededAtomic: string;
   try {
     neededAtomic = (
@@ -315,7 +345,7 @@ export async function ensureUsdt0Liquidity(args: {
     };
   }
 
-  const balances = await readBuyerBalances(neededAtomic);
+  const balances = await readBuyerBalances(neededAtomic, undefined, toTokenAddress);
   if (!balances) {
     return {
       needed: true,
@@ -333,18 +363,23 @@ export async function ensureUsdt0Liquidity(args: {
       balances,
       quote: null,
       executed: false,
-      message: `USDT0 balance ${balances.usdt0Human} covers purchase`,
+      message: `${toSymbol} balance ${balances.usdt0Human} covers purchase`,
     };
   }
 
-  const quote = await quoteNativeToUsdt0(balances, neededAtomic);
+  const quote = await quoteNativeToUsdt0(
+    balances,
+    neededAtomic,
+    toTokenAddress,
+    toSymbol,
+  );
   if (!args.execute) {
     return {
       needed: true,
       balances,
       quote,
       executed: false,
-      message: `Need ${formatUnits(BigInt(balances.shortfallAtomic), config.tokenDecimals)} more ${config.tokenSymbol}. ${quote.routeSummary}`,
+      message: `Need ${formatUnits(BigInt(balances.shortfallAtomic), config.tokenDecimals)} more ${toSymbol}. ${quote.routeSummary}`,
     };
   }
 
@@ -364,7 +399,6 @@ export async function ensureUsdt0Liquidity(args: {
     };
   }
 
-  // Fail-soft for demo: surface plan; caller may still settle if USDT0 was topped up.
   return {
     needed: true,
     balances,
@@ -372,6 +406,6 @@ export async function ensureUsdt0Liquidity(args: {
     executed: false,
     message:
       exec.error ||
-      `Could not auto-swap — fund ${config.tokenSymbol} or retry. ${quote.routeSummary}`,
+      `Could not auto-swap — fund ${toSymbol} or retry. ${quote.routeSummary}`,
   };
 }

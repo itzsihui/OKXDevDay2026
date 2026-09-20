@@ -30,6 +30,10 @@ type SearchApiProduct = {
     underlying?: string;
     explorerUrl?: string;
   };
+  quoteCurrency?: string;
+  quotePrice?: string;
+  settleAsset?: string;
+  settleSymbol?: string;
 };
 
 type SearchPayload = {
@@ -83,6 +87,10 @@ function toPick(
     injectionFlags: q.injectionFlags.length ? q.injectionFlags : undefined,
     quarantined: q.injectionFlags.length > 0,
     tokenization: product.tokenization,
+    quoteCurrency: product.quoteCurrency,
+    quotePrice: product.quotePrice,
+    settleAsset: product.settleAsset,
+    settleSymbol: product.settleSymbol,
   };
 }
 

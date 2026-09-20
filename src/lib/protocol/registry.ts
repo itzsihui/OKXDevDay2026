@@ -39,6 +39,10 @@ export type MarketProduct = {
   imageUrl: string;
   attrs?: import("@/lib/store/types").SkuAttrs;
   tokenization?: import("@/lib/store/types").SkuTokenization;
+  quoteCurrency?: string;
+  quotePrice?: string;
+  settleAsset?: string;
+  settleSymbol?: string;
 };
 
 export function buildRegistryStores(
@@ -243,6 +247,10 @@ export function flattenMarketProducts(stores: StoreRecord[]): MarketProduct[] {
         imageUrl: imageForProduct(sku.title, sku.description, sku.id),
         attrs: sku.attrs,
         tokenization: sku.tokenization,
+        quoteCurrency: sku.quoteCurrency,
+        quotePrice: sku.quotePrice,
+        settleAsset: sku.settleAsset,
+        settleSymbol: sku.settleSymbol,
       });
     }
   }

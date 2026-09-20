@@ -1,5 +1,27 @@
-import type { StoreRecord } from "@/lib/store/types";
+import type { Sku, StoreRecord } from "@/lib/store/types";
 import { repo } from "@/lib/store/repo";
+
+export type ResolvedSku = {
+  id: string;
+  title: string;
+  price: string;
+  quoteCurrency?: string;
+  quotePrice?: string;
+  settleAsset?: string;
+  settleSymbol?: string;
+};
+
+function toResolvedSku(sku: Sku): ResolvedSku {
+  return {
+    id: sku.id,
+    title: sku.title,
+    price: sku.price,
+    quoteCurrency: sku.quoteCurrency,
+    quotePrice: sku.quotePrice,
+    settleAsset: sku.settleAsset,
+    settleSymbol: sku.settleSymbol,
+  };
+}
 
 function normalizeProductToken(value: string) {
   return value
@@ -75,7 +97,7 @@ export function extractSlugFromMessage(message?: string): string | null {
 
 export type NetworkMatch = {
   store: StoreRecord;
-  sku: { id: string; title: string; price: string };
+  sku: ResolvedSku;
   score: number;
 };
 
@@ -90,7 +112,7 @@ export async function resolveBuyerTarget(args: {
   | {
       ok: true;
       slug: string;
-      sku: { id: string; title: string; price: string };
+      sku: ResolvedSku;
       merchantAddress: string;
       via: "slug" | "registry" | "quote";
     }
@@ -128,7 +150,7 @@ export async function resolveBuyerTarget(args: {
     return {
       ok: true,
       slug: store.slug,
-      sku: { id: sku.id, title: sku.title, price: sku.price },
+      sku: toResolvedSku(sku),
       merchantAddress: store.merchantAddress,
       via: "quote",
     };
@@ -147,7 +169,7 @@ export async function resolveBuyerTarget(args: {
       return {
         ok: true,
         slug: store.slug,
-        sku: { id: first.id, title: first.title, price: first.price },
+        sku: toResolvedSku(first),
         merchantAddress: store.merchantAddress,
         via: "slug",
       };
@@ -167,7 +189,7 @@ export async function resolveBuyerTarget(args: {
     return {
       ok: true,
       slug: store.slug,
-      sku: { id: best.sku.id, title: best.sku.title, price: best.sku.price },
+      sku: toResolvedSku(best.sku),
       merchantAddress: store.merchantAddress,
       via: "slug",
     };
@@ -194,7 +216,7 @@ export async function resolveBuyerTarget(args: {
     return {
       ok: true,
       slug: store.slug,
-      sku: { id: first.id, title: first.title, price: first.price },
+      sku: toResolvedSku(first),
       merchantAddress: store.merchantAddress,
       via: "registry",
     };
@@ -208,7 +230,7 @@ export async function resolveBuyerTarget(args: {
       if (!best || score > best.score) {
         best = {
           store,
-          sku: { id: sku.id, title: sku.title, price: sku.price },
+          sku: toResolvedSku(sku),
           score,
         };
       }
@@ -230,7 +252,7 @@ export async function resolveBuyerTarget(args: {
   return {
     ok: true,
     slug: best.store.slug,
-    sku: { id: best.sku.id, title: best.sku.title, price: best.sku.price },
+    sku: best.sku,
     merchantAddress: best.store.merchantAddress,
     via: "registry",
   };

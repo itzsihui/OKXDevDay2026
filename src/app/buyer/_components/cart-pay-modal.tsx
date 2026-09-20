@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { MarketProductPick, PaymentRail } from "../_lib/buyer-flow";
+import { LiquidityMapPanel } from "./liquidity-map-panel";
 
 export function CartPayModal({
   open,
@@ -30,6 +31,7 @@ export function CartPayModal({
   );
   const isVisa = rail === "visa";
   const stores = [...new Set(lines.map((l) => l.storeSlug))];
+  const isOutfit = stores.length > 1 || lines.length > 1;
 
   return (
     <div
@@ -53,45 +55,57 @@ export function CartPayModal({
             id="cart-pay-title"
             className="font-[family-name:var(--font-syne)] text-lg font-semibold tracking-tight"
           >
-            Pay cart in chat
+            {isOutfit ? "Outfit checkout" : "Pay cart in chat"}
           </h2>
           <p className="mt-1 text-xs text-foreground/50">
-            {lines.length} SKU{lines.length === 1 ? "" : "s"} · each settles on
-            its own locked quote (CaMeL)
+            {lines.length} SKU{lines.length === 1 ? "" : "s"} across{" "}
+            {stores.length} store{stores.length === 1 ? "" : "s"} · one authorize
+            · mixed quotes → settle after route
           </p>
         </div>
 
         <div className="overflow-y-auto px-5 py-4">
           <ul className="space-y-2">
-            {lines.map((line) => (
-              <li
-                key={line.id}
-                className="flex items-center gap-3 rounded-xl border border-border p-2"
-              >
-                <div className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
-                  <Image
-                    src={line.imageUrl}
-                    alt={line.title}
-                    fill
-                    className="object-cover"
-                    sizes="48px"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {line.quarantined
-                      ? line.id.split(":")[1] || line.id
-                      : line.title}
+            {lines.map((line) => {
+              const quoteCur = line.quoteCurrency || "USDT0";
+              const quotePx = line.quotePrice || line.price;
+              const showConvert =
+                quoteCur.toUpperCase() !==
+                (line.settleSymbol || "USDT0").toUpperCase();
+              return (
+                <li
+                  key={line.id}
+                  className="flex items-center gap-3 rounded-xl border border-border p-2"
+                >
+                  <div className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
+                    <Image
+                      src={line.imageUrl}
+                      alt={line.title}
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {line.quarantined
+                        ? line.id.split(":")[1] || line.id
+                        : line.title}
+                    </p>
+                    <p className="font-mono text-[10px] text-foreground/45">
+                      /s/{line.storeSlug} · ×{line.quantity}
+                      {showConvert
+                        ? ` · quotes ${quotePx} ${quoteCur}`
+                        : null}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-right text-sm font-medium tabular-nums">
+                    {(Number(line.price) * line.quantity).toFixed(2)}{" "}
+                    {line.settleSymbol || "USDT0"}
                   </p>
-                  <p className="font-mono text-[10px] text-foreground/45">
-                    /s/{line.storeSlug} · ×{line.quantity}
-                  </p>
-                </div>
-                <p className="shrink-0 text-sm font-medium tabular-nums">
-                  {(Number(line.price) * line.quantity).toFixed(2)} USDT0
-                </p>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
 
           <div className="mt-4 space-y-2">
@@ -128,42 +142,42 @@ export function CartPayModal({
               >
                 <span className="font-medium">USDT0 · x402</span>
                 <span className="mt-0.5 block text-xs text-foreground/55">
-                  X Layer Testnet per locked quote
+                  Route once · settle each store
                 </span>
               </button>
             </div>
           </div>
+
+          <LiquidityMapPanel
+            enabled={rail === "stablecoin"}
+            lines={lines.map((line) => {
+              const skuId = line.id.includes(":")
+                ? line.id.slice(line.id.indexOf(":") + 1)
+                : line.id;
+              return {
+                storeSlug: line.storeSlug,
+                storeName: line.storeName,
+                skuId,
+                title: line.title,
+                quantity: line.quantity,
+                price: line.price,
+                quoteCurrency: line.quoteCurrency,
+                quotePrice: line.quotePrice,
+                settleAsset: line.settleAsset,
+                settleSymbol: line.settleSymbol,
+              };
+            })}
+          />
 
           <div className="mt-4 rounded-md border border-border bg-muted/40 px-3 py-3 text-[13px] leading-relaxed text-foreground/75">
             <p className="text-[11px] font-medium tracking-wide text-foreground/50 uppercase">
               Locked quotes
             </p>
             <p className="mt-2 text-[12px] text-foreground/60">
-              Total <strong>{total.toFixed(2)} USDT0</strong> across{" "}
-              {stores.length} store{stores.length === 1 ? "" : "s"}. Hostile
-              catalog titles cannot change payee, amount, or skip authorize on
-              any line.
+              Total <strong>{total.toFixed(2)} settle-eq</strong> across{" "}
+              {stores.length} store{stores.length === 1 ? "" : "s"}. Catalog
+              titles cannot change payee, amount, or skip authorize.
             </p>
-            <dl className="mt-2 space-y-1 font-mono text-[11px]">
-              {lines.map((line) => {
-                const skuId = line.id.includes(":")
-                  ? line.id.slice(line.id.indexOf(":") + 1)
-                  : line.id;
-                return (
-                  <div
-                    key={line.id}
-                    className="flex justify-between gap-2 border-t border-border/60 pt-1"
-                  >
-                    <dt className="truncate text-foreground/45">
-                      /s/{line.storeSlug}:{skuId} ×{line.quantity}
-                    </dt>
-                    <dd className="shrink-0 text-foreground">
-                      {(Number(line.price) * line.quantity).toFixed(2)}
-                    </dd>
-                  </div>
-                );
-              })}
-            </dl>
           </div>
         </div>
 
@@ -176,15 +190,11 @@ export function CartPayModal({
           >
             Back
           </Button>
-          <Button
-            type="button"
-            disabled={busy || !rail}
-            onClick={onPay}
-          >
+          <Button type="button" disabled={busy || !rail} onClick={onPay}>
             {busy
               ? isVisa
                 ? "Paying Visa…"
-                : "Paying USDT0…"
+                : "Routing + settling…"
               : `Authorize ${lines.length} settle${lines.length === 1 ? "" : "s"}`}
           </Button>
         </div>

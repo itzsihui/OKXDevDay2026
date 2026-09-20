@@ -18,12 +18,33 @@ export type SkuTokenization = {
   explorerUrl?: string;
 };
 
+/**
+ * Merchant-facing quote unit (display). Settlement may still be USDT0
+ * (hackathon-safe) or a different ERC-20 via settleAsset (full multi-asset).
+ */
+export type QuoteCurrency = "USDT0" | "USD" | "OKB" | "WETH" | "ETH" | string;
+
 export type Sku = {
   id: string;
   title: string;
   description: string;
   quantity: number;
+  /**
+   * Settlement amount in settleSymbol units (usually USDT0 decimals).
+   * This is what x402 charges after any DEX route.
+   */
   price: string;
+  /** Display currency merchants advertise (may differ from settleSymbol). */
+  quoteCurrency?: QuoteCurrency;
+  /** Optional display price in quoteCurrency (e.g. "0.000012" WETH). */
+  quotePrice?: string;
+  /**
+   * ERC-20 settle asset for x402 (defaults to network USDT0).
+   * When different from USDT0, buyer routes liquidity into this asset first.
+   */
+  settleAsset?: string;
+  /** Symbol for settleAsset (defaults to USDT0). */
+  settleSymbol?: string;
   /** Structured fashion facets for catalog + search (optional). */
   attrs?: SkuAttrs;
   /** Tokenized / RWA metadata for Build a Market track demos. */

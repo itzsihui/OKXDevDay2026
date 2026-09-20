@@ -40,6 +40,11 @@ export type MarketProductPick = {
     underlying?: string;
     explorerUrl?: string;
   };
+  /** Merchant display quote unit (may differ from settleSymbol). */
+  quoteCurrency?: string;
+  quotePrice?: string;
+  settleAsset?: string;
+  settleSymbol?: string;
 };
 
 /**
@@ -52,6 +57,8 @@ export type PurchaseQuote = {
   price: string;
   merchantAddress?: string;
   rail: PaymentRail;
+  settleAsset?: string;
+  settleSymbol?: string;
 };
 
 export type ChatMessage = {

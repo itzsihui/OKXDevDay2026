@@ -154,12 +154,12 @@ function detectItem(
   }
   // Explicit set / work-occasion garments — not bare "date" (that clarifies first)
   if (
-    /\b(outfit|full\s+look|ensemble)\b/.test(t) ||
+    /\b(outfit|full\s+look|ensemble|weekend\s+look)\b/.test(t) ||
     /\b((a|the|full|complete)\s+set)\b/.test(t) ||
     /\b(set\s+for|find\s+me\s+a\s+set|want\s+a\s+set|need\s+a\s+set)\b/.test(t) ||
-    /\b(date[- ]?night\s+set|full\s+set)\b/.test(t) ||
+    /\b(date[- ]?night\s+set|full\s+set|weekend\s+outfit)\b/.test(t) ||
     (/\bset\b/.test(t) &&
-      /\b(date|dinner|night|look|wear|clothes|outfit)\b/.test(t)) ||
+      /\b(date|dinner|night|look|wear|clothes|outfit|weekend)\b/.test(t)) ||
     (/\b(shirt|blouse|top)\b/.test(t) && /\b(pants?|trousers?|jeans)\b/.test(t)) ||
     /\b(present(?:ation)?|interview|meeting|professional|formal|office)\b/.test(
       t,
@@ -238,6 +238,7 @@ function detectOccasion(text: string): string | undefined {
   if (/\b(hackathon|coding\s+event|all[- ]?nighter)\b/.test(t)) {
     return "hackathon";
   }
+  if (/\b(weekend|brunch|saturday|sunday\s+look)\b/.test(t)) return "weekend";
   if (/\b(party|club|birthday|festival)\b/.test(t)) return "party";
   if (/\b(date|dinner|night\s+out|going\s+out)\b/.test(t)) return "date";
   if (
@@ -256,6 +257,7 @@ function detectStyle(text: string): string | undefined {
   const t = normalizeFashionTypos(text);
   if (isMetaHelpAsk(t)) return undefined;
   if (/\b(hackathon|coding)\b/.test(t)) return "hackathon";
+  if (/\b(weekend|brunch)\b/.test(t)) return "weekend";
   if (/\b(party|club|birthday|festival)\b/.test(t)) return "party";
   if (/\b(date|dinner|night\s+out)\b/.test(t)) return "date";
   if (
@@ -280,6 +282,7 @@ const META_HELP_REPLY =
 const META_HELP_SUGGESTIONS = [
   "I want a t-shirt",
   "Looking for a cap",
+  "Weekend outfit",
   "Need a presentation outfit",
   "Date-night set",
 ];
@@ -360,6 +363,17 @@ const HACKATHON_SET = {
   searchQueries: ["tee", "shirt", "hackathon", "oversized"],
 } as const;
 
+/** Multi-store weekend look — mixed quote currencies (hackathon-safe) + optional alt settle. */
+const WEEKEND_SET = {
+  searchQuery: "weekend-outfit tee cap sneaker",
+  searchQueries: [
+    "weekend-outfit",
+    "outfit-tee",
+    "outfit-cap",
+    "outfit-sneakers",
+  ],
+} as const;
+
 function isHackathonProfile(profile?: FashionProfile, style?: string): boolean {
   const occasion = (profile?.occasion || "").toLowerCase();
   const s = (style || profile?.style || "").toLowerCase();
@@ -367,6 +381,16 @@ function isHackathonProfile(profile?: FashionProfile, style?: string): boolean {
     occasion === "hackathon" ||
     s === "hackathon" ||
     /\bhackathon\b/.test(occasion)
+  );
+}
+
+function isWeekendProfile(profile?: FashionProfile, style?: string): boolean {
+  const occasion = (profile?.occasion || "").toLowerCase();
+  const s = (style || profile?.style || "").toLowerCase();
+  return (
+    occasion === "weekend" ||
+    s === "weekend" ||
+    /\b(weekend|brunch)\b/.test(occasion)
   );
 }
 
@@ -386,6 +410,7 @@ function isWorkProfile(profile?: FashionProfile, style?: string): boolean {
   if (
     isPartyProfile(profile, style) ||
     isHackathonProfile(profile, style) ||
+    isWeekendProfile(profile, style) ||
     occasion === "date" ||
     s === "date"
   ) {
@@ -406,6 +431,12 @@ function huntForOccasion(
     return {
       searchQuery: HACKATHON_SET.searchQuery,
       searchQueries: [...HACKATHON_SET.searchQueries],
+    };
+  }
+  if (isWeekendProfile(profile, style) || style === "weekend") {
+    return {
+      searchQuery: WEEKEND_SET.searchQuery,
+      searchQueries: [...WEEKEND_SET.searchQueries],
     };
   }
   if (isWorkProfile(profile, style) || style === "professional") {
@@ -449,11 +480,13 @@ function catalogSearchFromProfile(
   // Occasion-shaped hunts always win over a stale tee/shirt list from the LLM
   if (
     isHackathonProfile(effective, style) ||
+    isWeekendProfile(effective, style) ||
     isWorkProfile(effective, style) ||
     isPartyProfile(effective, style) ||
     effective.occasion === "date" ||
     style === "date" ||
-    style === "professional"
+    style === "professional" ||
+    style === "weekend"
   ) {
     return huntForOccasion(effective, style);
   }
@@ -554,10 +587,15 @@ function enrichProfile(
     !next.items?.length &&
     (item === "outfit" ||
       style === "professional" ||
+      occasion === "weekend" ||
+      style === "weekend" ||
       wantsExplicitSet(corpus) ||
       (occasion === "date" && wantsExplicitSet(corpus)))
   ) {
-    next.items = ["shirt", "pants", "jeans"];
+    next.items =
+      occasion === "weekend" || style === "weekend"
+        ? [...WEEKEND_SET.searchQueries]
+        : ["shirt", "pants", "jeans"];
   }
   if (!next.color) {
     const color = lower.match(
@@ -853,6 +891,7 @@ export function runDeterministicSalesperson(
       suggestions: [
         "I want a t-shirt",
         "Looking for a cap",
+        "Weekend outfit",
         "Need a presentation outfit",
       ],
       status: "clarifying",
@@ -901,6 +940,34 @@ export function runDeterministicSalesperson(
           occasion: "hackathon",
           style: "hackathon",
           item: "tee and shirt",
+          items: catalog.searchQueries.slice(0, 4),
+        },
+        llm: "deterministic",
+      });
+    }
+    if (latestOccasion === "weekend") {
+      const catalog = catalogSearchFromProfile(messages, {
+        category: "fashion",
+        occasion: "weekend",
+        style: "weekend",
+        items: [...WEEKEND_SET.searchQueries],
+      });
+      return ensureConversationProgress(messages, {
+        reply:
+          "Weekend outfit — I'll pull a tee, cap, and sneakers across stores (mixed quote currencies → USDT0 settle).",
+        suggestions: [],
+        status: "ready",
+        searchQuery: catalog.searchQuery,
+        searchQueries: catalog.searchQueries,
+        thoughts: [
+          "Weekend full look — multi-merchant outfit with quoteCurrency demo.",
+          `Catalog hunt: ${catalog.searchQueries.join(" + ")}`,
+        ],
+        profile: {
+          category: "fashion",
+          occasion: "weekend",
+          style: "weekend",
+          item: "weekend outfit",
           items: catalog.searchQueries.slice(0, 4),
         },
         llm: "deterministic",
@@ -1193,7 +1260,7 @@ export function runDeterministicSalesperson(
     return {
       reply:
         "Happy to help. Tee, cap, pants, or a full outfit for something like a date or presentation?",
-      suggestions: ["A t-shirt", "A cap", "Date-night set", "Presentation outfit"],
+      suggestions: ["A t-shirt", "A cap", "Weekend outfit", "Date-night set", "Presentation outfit"],
       status: "clarifying",
       thoughts: [
         "Ask is still open-ended — need a garment or occasion before searching.",

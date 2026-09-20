@@ -37,6 +37,8 @@ export type PayQuote = {
   skuId: string;
   price: string;
   merchantAddress?: string;
+  settleAsset?: string;
+  settleSymbol?: string;
 };
 
 export { extractRequestedProduct } from "@/lib/agents/discover";
@@ -88,10 +90,15 @@ export async function payX402Tool(args: {
   const expectedPrice = quote?.price || sku.price;
   const expectedPayTo = (quote?.merchantAddress || merchantAddress).trim();
 
+  const settleAsset =
+    quote?.settleAsset || sku.settleAsset || config.tokenAddress;
+  const settleSymbol =
+    quote?.settleSymbol || sku.settleSymbol || config.tokenSymbol;
+
   if (via === "quote") {
     steps.push({
       type: "info",
-      text: `Capability lock → /s/${slug} · sku ${sku.id} · ${expectedPrice} ${config.tokenSymbol}`,
+      text: `Capability lock → /s/${slug} · sku ${sku.id} · ${expectedPrice} ${settleSymbol}`,
     });
   } else if (via === "registry") {
     steps.push({
@@ -136,7 +143,7 @@ export async function payX402Tool(args: {
 
   steps.push({
     type: "info",
-    text: "Routing liquidity on X Layer (USDT0 balance → OKX DEX if short)",
+    text: `Routing liquidity on X Layer (${settleSymbol} balance → OKX DEX if short)`,
   });
   let routeSwapTx: string | undefined;
   let routeSummary: string | undefined;
@@ -145,11 +152,13 @@ export async function payX402Tool(args: {
       price: expectedPrice,
       quantity: 1,
       execute: true,
+      toTokenAddress: settleAsset,
+      toSymbol: settleSymbol,
     });
     if (route.balances) {
       steps.push({
         type: "chain",
-        text: `Wallet ${route.balances.address.slice(0, 8)}… · ${config.tokenSymbol} ${route.balances.usdt0Human} · native ${route.balances.nativeHuman}`,
+        text: `Wallet ${route.balances.address.slice(0, 8)}… · ${settleSymbol} ${route.balances.usdt0Human} · native ${route.balances.nativeHuman}`,
       });
     }
     if (route.quote) {

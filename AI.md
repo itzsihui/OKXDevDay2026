@@ -36,12 +36,14 @@ Do not claim voice unless we ship it. Vertical: fashion + tokenized/RWA demo lis
 ## Demo path (judges)
 
 1. `/` landing: fragmented balances → intent → route → settle → own
-2. `/buyer`: "Buy this drop" or "Deploy funds into this asset" → picks (fashion or RWA desk)
-3. Consent: liquidity route preview (USDT0 balance / native → USDT0 plan)
-4. Authorize → x402 settle → explorer receipt → ownership accrual
+2. `/buyer`: **"Weekend outfit"** (or "Buy this drop" / RWA) → multi-store picks
+3. Consent / cart: **liquidity map** — mixed `quoteCurrency` (WETH/OKB display) → USDT0 settle (hackathon-safe); optional `ALT_SETTLE_TOKEN` for full multi-asset
+4. Authorize → x402 settle per store → explorer receipt → ownership accrual
 5. Optional: `POST /s/{slug}/buy` 402 challenge + `/buyer/ownership` invite loop
 
 Fail-soft: missing `BUYER_PRIVATE_KEY` still shows the 402 challenge. Missing DEX liquidity shows a **plan** route and settles when USDT0 is funded.
+
+Outfit demo stores: `/s/atelier-tee`, `/s/harbor-caps`, `/s/stride-kicks`.
 
 ---
 

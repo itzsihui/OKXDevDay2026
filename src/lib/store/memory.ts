@@ -11,7 +11,7 @@ type Db = {
   reviewsByOrder: Map<string, string>;
 };
 
-const globalForDb = globalThis as typeof globalThis & { __borneoDbV9?: Db };
+const globalForDb = globalThis as typeof globalThis & { __borneoDbV10?: Db };
 
 function seed(): Db {
   const stores = new Map<string, StoreRecord>();
@@ -26,16 +26,16 @@ function seed(): Db {
 }
 
 function db(): Db {
-  if (!globalForDb.__borneoDbV9) {
-    // Fresh catalog incl. X Layer RWA Desk; keep demo orders from V8 when present
+  if (!globalForDb.__borneoDbV10) {
+    // Fresh catalog incl. weekend outfit stores (mixed quote + alt settle)
     const seeded = seed();
     const prev = (
       globalThis as typeof globalThis & {
-        __borneoDbV8?: Omit<Db, "stores"> & { stores?: Map<string, StoreRecord> };
+        __borneoDbV9?: Omit<Db, "stores"> & { stores?: Map<string, StoreRecord> };
       }
-    ).__borneoDbV8;
+    ).__borneoDbV9;
     if (prev) {
-      globalForDb.__borneoDbV9 = {
+      globalForDb.__borneoDbV10 = {
         stores: seeded.stores,
         orders: prev.orders,
         mandates: prev.mandates ?? new Map(),
@@ -43,10 +43,10 @@ function db(): Db {
         reviewsByOrder: prev.reviewsByOrder ?? new Map(),
       };
     } else {
-      globalForDb.__borneoDbV9 = seeded;
+      globalForDb.__borneoDbV10 = seeded;
     }
   }
-  const current = globalForDb.__borneoDbV9;
+  const current = globalForDb.__borneoDbV10;
   if (!current.mandates) current.mandates = new Map();
   if (!current.reviews) current.reviews = new Map();
   if (!current.reviewsByOrder) current.reviewsByOrder = new Map();

@@ -1,26 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import type { MarketProductPick, PaymentRail } from "../_lib/buyer-flow";
-
-type RoutePreview = {
-  needed?: boolean;
-  message?: string;
-  quote?: {
-    mode?: string;
-    fromSymbol?: string;
-    toSymbol?: string;
-    fromAmountHuman?: string;
-    toAmountHuman?: string;
-    routeSummary?: string;
-  };
-  balances?: {
-    usdt0Human?: string;
-    nativeHuman?: string;
-    hasEnoughUsdt0?: boolean;
-  };
-};
+import { LiquidityMapPanel } from "./liquidity-map-panel";
 
 export function PaymentConsentModal({
   open,
@@ -37,8 +20,6 @@ export function PaymentConsentModal({
   onAuthorize: () => void;
   busy?: boolean;
 }) {
-  const [route, setRoute] = useState<RoutePreview | null>(null);
-
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -48,30 +29,16 @@ export function PaymentConsentModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, busy, onCancel]);
 
-  useEffect(() => {
-    if (!open || !product || rail !== "stablecoin") {
-      setRoute(null);
-      return;
-    }
-    let cancelled = false;
-    void fetch(
-      `/api/liquidity?price=${encodeURIComponent(product.price)}&execute=0`,
-    )
-      .then((r) => r.json())
-      .then((data: RoutePreview) => {
-        if (!cancelled) setRoute(data);
-      })
-      .catch(() => {
-        if (!cancelled) setRoute(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, product, rail]);
-
   if (!open || !product || !rail) return null;
 
   const isVisa = rail === "visa";
+  const settleSymbol = product.settleSymbol || "USDT0";
+  const quoteCur = product.quoteCurrency || settleSymbol;
+  const quotePx = product.quotePrice || product.price;
+  const showConvert = quoteCur.toUpperCase() !== settleSymbol.toUpperCase();
+  const skuId = product.id.includes(":")
+    ? product.id.slice(product.id.indexOf(":") + 1)
+    : product.id;
 
   return (
     <div
@@ -119,16 +86,26 @@ export function PaymentConsentModal({
               <dt className="text-foreground/55">Quantity</dt>
               <dd>1</dd>
             </div>
+            {showConvert ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-foreground/55">Quoted</dt>
+                <dd className="text-right font-medium">
+                  {quotePx} {quoteCur}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex justify-between gap-4">
-              <dt className="text-foreground/55">Amount</dt>
-              <dd className="font-medium">{product.price} USDT0</dd>
+              <dt className="text-foreground/55">Settle</dt>
+              <dd className="font-medium">
+                {product.price} {settleSymbol}
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-foreground/55">Rail</dt>
               <dd className="text-right">
                 {isVisa
                   ? "Visa (agent-authorized card)"
-                  : "USDT0 · X Layer Testnet x402"}
+                  : `${settleSymbol} · X Layer Testnet x402`}
               </dd>
             </div>
             {!isVisa && product.tokenization ? (
@@ -144,33 +121,31 @@ export function PaymentConsentModal({
             ) : null}
           </dl>
 
-          {!isVisa && route ? (
-            <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5 text-[13px] leading-relaxed text-foreground/75">
-              <p className="font-medium text-foreground/85">Liquidity route</p>
-              <p className="mt-1">
-                Wallet USDT0:{" "}
-                <strong>{route.balances?.usdt0Human ?? "—"}</strong>
-                {route.balances?.hasEnoughUsdt0
-                  ? " (covers purchase)"
-                  : " (will route if short)"}
-              </p>
-              {route.quote ? (
-                <p className="mt-1">
-                  {route.quote.mode === "live" ? "Live" : "Plan"}:{" "}
-                  {route.quote.fromAmountHuman} {route.quote.fromSymbol} → ~
-                  {route.quote.toAmountHuman} {route.quote.toSymbol}
-                </p>
-              ) : null}
-              {route.message ? (
-                <p className="mt-1 text-xs text-foreground/55">{route.message}</p>
-              ) : null}
-            </div>
+          {!isVisa ? (
+            <LiquidityMapPanel
+              enabled
+              lines={[
+                {
+                  storeSlug: product.storeSlug,
+                  storeName: product.storeName,
+                  skuId,
+                  title: product.title,
+                  quantity: 1,
+                  price: product.price,
+                  quoteCurrency: product.quoteCurrency,
+                  quotePrice: product.quotePrice,
+                  settleAsset: product.settleAsset,
+                  settleSymbol: product.settleSymbol,
+                },
+              ]}
+            />
           ) : null}
 
           <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5 text-[13px] leading-relaxed text-foreground/75">
             {isVisa ? (
               <>
-                Spend cap ≥ <strong>{product.price}</strong> USDT0 · merchant{" "}
+                Spend cap ≥ <strong>{product.price}</strong> {settleSymbol} ·
+                merchant{" "}
                 <span className="font-mono">{product.storeSlug}</span> · mandate
                 TTL ~15 min. Agent will charge your authorized virtual card —
                 you confirm once.
@@ -178,7 +153,7 @@ export function PaymentConsentModal({
             ) : (
               <>
                 Intent → route → settle: agent checks balances, routes native →
-                USDT0 on X Layer when needed, then x402 PAYMENT-SIGNATURE.
+                settle asset on X Layer when needed, then x402 PAYMENT-SIGNATURE.
                 Protocol micro-fee accrues <strong>network ownership</strong>{" "}
                 after settle (merchant still receives full listed amount).
               </>

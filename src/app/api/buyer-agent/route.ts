@@ -11,6 +11,8 @@ type BuyerAgentBody = {
     skuId?: string;
     price?: string;
     merchantAddress?: string;
+    settleAsset?: string;
+    settleSymbol?: string;
   };
 };
 
@@ -27,6 +29,12 @@ export async function POST(request: Request) {
             price: String(body.quote.price),
             merchantAddress: body.quote.merchantAddress
               ? (String(body.quote.merchantAddress) as string)
+              : undefined,
+            settleAsset: body.quote.settleAsset
+              ? String(body.quote.settleAsset)
+              : undefined,
+            settleSymbol: body.quote.settleSymbol
+              ? String(body.quote.settleSymbol)
               : undefined,
           }
         : undefined;
