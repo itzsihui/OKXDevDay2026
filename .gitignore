@@ -42,9 +42,44 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Hackathon XRPL skill vendored clones (refreshed locally)
-ripple/skills/xrpl-agentic-resources/ows/
-ripple/skills/xrpl-agentic-resources/rlusd-skills/
-ripple/skills/xrpl-agentic-resources/x402-secure/
-ripple/skills/xrpl-agentic-resources/xrpl-dev-portal/
-ripple/skills/xrpl-agentic-resources/XRPL-Standards/
+# local Cursor hooks (machine-specific)
+.cursor/hooks.json
+
+# IDE feedback hooks (not part of the product)
+/hook/
+
+# redundant pitch assets (markdown sources are enough)
+docs/*.pdf
+architecture.drawio
+
+# Vendored Onchain OS skill packs — reinstall with:
+#   npx skills add okx/onchainos-skills --yes
+# Keep only the small project skill: okx-devday-resources
+.agents/skills/okx-ai/
+.agents/skills/okx-agentic-wallet/
+.agents/skills/okx-dex-market/
+.agents/skills/okx-defi/
+.agents/skills/okx-dapp-discovery/
+.agents/skills/okx-guide/
+.agents/skills/okx-agent-payments-protocol/
+.claude/skills/okx-ai/
+.claude/skills/okx-agentic-wallet/
+.claude/skills/okx-dex-market/
+.claude/skills/okx-defi/
+.claude/skills/okx-dapp-discovery/
+.claude/skills/okx-guide/
+.claude/skills/okx-agent-payments-protocol/
+.codex/skills/okx-ai/
+.codex/skills/okx-agentic-wallet/
+.codex/skills/okx-dex-market/
+.codex/skills/okx-defi/
+.codex/skills/okx-dapp-discovery/
+.codex/skills/okx-guide/
+.codex/skills/okx-agent-payments-protocol/
+.cursor/skills/okx-ai/
+.cursor/skills/okx-agentic-wallet/
+.cursor/skills/okx-dex-market/
+.cursor/skills/okx-defi/
+.cursor/skills/okx-dapp-discovery/
+.cursor/skills/okx-guide/
+.cursor/skills/okx-agent-payments-protocol/
