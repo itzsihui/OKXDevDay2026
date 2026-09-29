@@ -585,5 +585,41 @@ export function sampleMarketStores(
         },
       ],
     },
+    {
+      slug: "vault-atelier",
+      name: "Vault Atelier",
+      merchantAddress,
+      listOnMarket: true,
+      createdAt,
+      skus: [
+        {
+          id: "signature-overcoat-100",
+          title: "Signature Wool Overcoat / Charcoal / M",
+          description:
+            "Premium test item. Merchant quotes 100 USDC; x402 settles 100 USDT0 on X Layer after routing. Wallets holding less than 100 USDT0 trigger the liquidity route preview.",
+          quantity: 5,
+          price: "100",
+          quoteCurrency: "USDC",
+          quotePrice: "100",
+          settleSymbol: "USDT0",
+          attrs: {
+            subcategory: "outerwear",
+            color: "charcoal",
+            size: "M",
+            material: "wool",
+            tags: [
+              "premium",
+              "expensive",
+              "most-expensive",
+              "overcoat",
+              "coat",
+              "jacket",
+              "usdc",
+              "high-value",
+            ],
+          },
+        },
+      ],
+    },
   ];
 }

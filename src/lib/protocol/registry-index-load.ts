@@ -10,6 +10,7 @@ import {
   rebuildRegistryIndexFromStores,
 } from "@/lib/store/firestore-registry-index";
 import { repo } from "@/lib/store/repo";
+import { sampleMarketStores } from "@/lib/market/sample-stores";
 
 /** Paginated fashion registry index. Falls back to synthesizing from stores. */
 export async function loadRegistryIndexPage(args?: {
@@ -53,6 +54,18 @@ export async function loadRegistryIndexPage(args?: {
   };
 }
 
+/**
+ * Sample demo stores ship in code, not Firestore. Keep them searchable even
+ * when a durable registry_index already exists without them.
+ */
+function withSampleEntries(entries: RegistryIndexEntry[]): RegistryIndexEntry[] {
+  const have = new Set(entries.map((e) => e.slug));
+  const extra = sampleMarketStores()
+    .filter((s) => !have.has(s.slug))
+    .map((s) => buildRegistryIndexEntry({ ...s, listOnMarket: true }));
+  return extra.length ? [...entries, ...extra] : entries;
+}
+
 export async function loadRegistryIndexForSearch(
   max = 1000,
 ): Promise<RegistryIndexEntry[]> {
@@ -60,7 +73,7 @@ export async function loadRegistryIndexForSearch(
   if (db) {
     try {
       const entries = await listRegistryIndexForSearch(db, max);
-      if (entries.length > 0) return entries;
+      if (entries.length > 0) return withSampleEntries(entries);
       const stores = (await repo.listStores()).filter(
         (s) => s.listOnMarket !== false,
       );
