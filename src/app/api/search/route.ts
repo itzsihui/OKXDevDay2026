@@ -7,10 +7,27 @@ import {
   semanticSearchMarket,
   type ReviewSignal,
 } from "@/lib/protocol/semantic-search";
+import { sampleMarketStores } from "@/lib/market/sample-stores";
 import { repo } from "@/lib/store/repo";
 import type { StoreRecord } from "@/lib/store/types";
 
 export const runtime = "nodejs";
+
+function mergeDemoStores(stores: StoreRecord[]): StoreRecord[] {
+  const bySlug = new Map(stores.map((s) => [s.slug, s]));
+  for (const sample of sampleMarketStores()) {
+    if (!bySlug.has(sample.slug)) {
+      bySlug.set(sample.slug, { ...sample, listOnMarket: true });
+    }
+  }
+  return [...bySlug.values()].filter((s) => s.listOnMarket !== false);
+}
+
+function isLuxuryQuery(queries: string[], text: string) {
+  return [...queries, text].some((q) =>
+    /\b(expensive|premium|luxury|most-expensive|overcoat)\b/i.test(q),
+  );
+}
 
 /**
  * Fashion-aware agent search.
@@ -77,9 +94,11 @@ export async function GET(request: Request) {
     stores.push(...all.slice(0, 40));
   }
 
+  const merged = mergeDemoStores(stores);
+
   const reviewMap = new Map<string, ReviewSignal>();
   await Promise.all(
-    stores.map(async (store) => {
+    merged.map(async (store) => {
       const reviews = await repo.listReviews(store.slug);
       const agg = renderReviews(store.slug, reviews).aggregate.bySku;
       for (const [skuId, v] of Object.entries(agg)) {
@@ -88,7 +107,7 @@ export async function GET(request: Request) {
     }),
   );
 
-  const products = flattenMarketProducts(stores);
+  const products = flattenMarketProducts(merged);
   const result = await semanticSearchMarket({
     products,
     query: queryText,
@@ -97,6 +116,7 @@ export async function GET(request: Request) {
     limit,
     embedCap: 200,
     reviews: reviewMap,
+    preferHighestPrice: isLuxuryQuery(qList, queryText),
   });
 
   return Response.json(
@@ -109,7 +129,7 @@ export async function GET(request: Request) {
         reviews: "verified_purchase_wilson_boost",
       },
       ...result,
-      storeCount: stores.length,
+      storeCount: merged.length,
       indexStoreCount: index.length,
       shortlistedStores: slugs,
       filters: {

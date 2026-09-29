@@ -67,7 +67,11 @@ export function createFirestoreStoreRepo(fallback: StoreRepo): StoreRepo {
           );
         }
       }
-      return fallback.getStore(slug);
+      const local = await fallback.getStore(slug);
+      if (local) return local;
+      return (
+        sampleMarketStores().find((s) => s.slug === slug) ?? null
+      );
     },
 
     async putStore(store) {

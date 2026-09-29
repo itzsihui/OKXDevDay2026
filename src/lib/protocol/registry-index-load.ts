@@ -79,9 +79,9 @@ export async function loadRegistryIndexForSearch(
       );
       if (stores.length > 0) {
         await rebuildRegistryIndexFromStores(db, stores);
-        return listRegistryIndexForSearch(db, max);
+        return withSampleEntries(await listRegistryIndexForSearch(db, max));
       }
-      return entries;
+      return withSampleEntries(entries);
     } catch (err) {
       console.warn("[registry-index] search load failed", err);
     }

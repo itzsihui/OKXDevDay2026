@@ -172,6 +172,27 @@ async function ensureCatalogVectors(products: MarketProduct[]) {
   return catalogCache;
 }
 
+function pinHighestPriced(
+  result: SemanticSearchResult,
+  catalog: MarketProduct[],
+  origin: string,
+  reviews: Map<string, ReviewSignal> | null,
+  limit: number,
+  enabled?: boolean,
+): SemanticSearchResult {
+  if (!enabled || catalog.length === 0) return result;
+  const top = catalog.reduce((best, p) =>
+    Number(p.price) > Number(best.price) ? p : best,
+  );
+  const [hit] = toHits([{ product: top, semantic: 1 }], origin, reviews);
+  if (!hit) return result;
+  const rest = result.products.filter(
+    (p) => p.storeSlug !== top.storeSlug || p.id !== top.id,
+  );
+  const products = [hit, ...rest].slice(0, limit);
+  return { ...result, products, productCount: products.length };
+}
+
 function toHits(
   rows: Array<{ product: MarketProduct; semantic: number }>,
   origin: string,
@@ -229,6 +250,8 @@ export async function semanticSearchMarket(args: {
   embedCap?: number;
   /** Map of `storeSlug:skuId` → review aggregate. */
   reviews?: Map<string, ReviewSignal> | null;
+  /** Most-expensive / premium hunts: pin the highest-priced SKU first. */
+  preferHighestPrice?: boolean;
 }): Promise<SemanticSearchResult> {
   const queries = (
     args.queries?.length ? args.queries : [args.query]
@@ -239,28 +262,38 @@ export async function semanticSearchMarket(args: {
   const limit = Math.min(Math.max(args.limit ?? DEFAULT_LIMIT, 1), 24);
   const embedCap = Math.min(Math.max(args.embedCap ?? 200, 24), 400);
   const reviews = args.reviews ?? null;
+  const origin = args.origin;
+  const finalize = (result: SemanticSearchResult) =>
+    pinHighestPriced(
+      result,
+      args.products,
+      origin,
+      reviews,
+      limit,
+      args.preferHighestPrice,
+    );
 
   if (!query) {
-    return {
+    return finalize({
       query: "",
       mode: "keyword",
       model: null,
       productCount: 0,
       products: [],
-    };
+    });
   }
   if (args.products.length === 0) {
-    return {
+    return finalize({
       query,
       mode: "keyword",
       model: null,
       productCount: 0,
       products: [],
-    };
+    });
   }
 
   let pool = args.products;
-  if (pool.length > embedCap) {
+  if (pool.length > embedCap && !args.preferHighestPrice) {
     const byKey = new Map<string, MarketProduct>();
     for (const q of queries) {
       for (const p of filterMarketProducts(pool, q)) {
@@ -289,16 +322,18 @@ export async function semanticSearchMarket(args: {
     }
     const merged = [...byKey.values()];
     if (merged.length === 0) {
-      return keywordHits(args.products, query, args.origin, limit, reviews);
+      return finalize(
+        keywordHits(args.products, query, origin, limit, reviews),
+      );
     }
-    const productsOut = toHits(merged, args.origin, reviews).slice(0, limit);
-    return {
+    const productsOut = toHits(merged, origin, reviews).slice(0, limit);
+    return finalize({
       query,
       mode: "keyword",
       model: null,
       productCount: productsOut.length,
       products: productsOut,
-    };
+    });
   }
 
   const scored = pool
@@ -309,24 +344,22 @@ export async function semanticSearchMarket(args: {
       }
       return { product, semantic: best };
     })
-    .filter((row) => row.semantic >= MIN_SCORE);
+    .filter((row) =>
+      args.preferHighestPrice ? true : row.semantic >= MIN_SCORE,
+    );
 
   if (scored.length === 0) {
-    return keywordHits(
-      args.products,
-      queries[0] || query,
-      args.origin,
-      limit,
-      reviews,
+    return finalize(
+      keywordHits(args.products, queries[0] || query, origin, limit, reviews),
     );
   }
 
-  const productsOut = toHits(scored, args.origin, reviews).slice(0, limit);
-  return {
+  const productsOut = toHits(scored, origin, reviews).slice(0, limit);
+  return finalize({
     query,
     mode: "semantic",
     model: EMBED_MODEL,
     productCount: productsOut.length,
     products: productsOut,
-  };
+  });
 }
