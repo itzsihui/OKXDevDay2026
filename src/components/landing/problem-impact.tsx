@@ -15,8 +15,8 @@ const IMPACT = [
   },
   {
     value: "+",
-    label: "Ownership on every buy",
-    detail: "Protocol micro-fee → network stake",
+    label: "XPoints on every buy",
+    detail: "Protocol micro-fee → rewards for you",
   },
 ] as const;
 
@@ -49,14 +49,14 @@ export function LandingProblemImpact() {
           <p className="font-[family-name:var(--font-syne)] text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-[1.15] tracking-tight text-[var(--landing-jade)]">
             Intent <span className="text-[var(--landing-fog)]/35">→</span> Route{" "}
             <span className="text-[var(--landing-fog)]/35">→</span> Settle{" "}
-            <span className="text-[var(--landing-fog)]/35">→</span> Own
+            <span className="text-[var(--landing-fog)]/35">→</span> Earn
           </p>
           <p className="mt-5 max-w-[40ch] font-[family-name:var(--font-syne)] text-xl font-medium leading-snug text-[var(--landing-fog)] md:text-2xl">
             One agent loop on X Layer
           </p>
           <p className="mt-3 max-w-[48ch] text-sm leading-relaxed text-[var(--landing-fog)]/50">
             Borneo evaluates the wallet, routes liquidity into USDT0, settles
-            with OKX x402, and accrues network ownership from the protocol fee —
+            with OKX x402, and rewards you with XPoints from the protocol fee —
             so switching is seamless and rewarded.
           </p>
         </Reveal>

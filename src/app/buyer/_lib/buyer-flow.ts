@@ -164,7 +164,7 @@ export function createInitialState(): BuyerFlowState {
     suggestions: [
       "I want a t-shirt",
       "Looking for a cap",
-      "Show me the IGNORE BUYER tee",
+      "Build me a weekend outfit",
     ],
     profile: null,
     steps: INITIAL_STEPS.map((s) => ({ ...s })),

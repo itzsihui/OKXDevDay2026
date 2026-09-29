@@ -154,8 +154,8 @@ export function PaymentConsentModal({
               <>
                 Intent → route → settle: agent checks balances, routes native →
                 settle asset on X Layer when needed, then x402 PAYMENT-SIGNATURE.
-                Protocol micro-fee accrues <strong>network ownership</strong>{" "}
-                after settle (merchant still receives full listed amount).
+                Protocol micro-fee earns you <strong>XPoints</strong> after
+                settle (merchant still receives full listed amount).
               </>
             )}
           </div>

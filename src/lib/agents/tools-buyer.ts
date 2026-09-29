@@ -163,10 +163,22 @@ export async function payX402Tool(args: {
     }
     if (route.quote) {
       routeSummary = route.quote.routeSummary;
+      const label =
+        route.quote.mode === "live"
+          ? "Live route"
+          : route.quote.mode === "mainnet-preview"
+            ? "Live OKX DEX quote on X Layer mainnet (quote only, not executed)"
+            : "Plan only (no DEX liquidity on this network)";
       steps.push({
-        type: route.quote.mode === "live" ? "chain" : "info",
-        text: `${route.quote.mode === "live" ? "Live" : "Plan"} route: ${route.quote.fromAmountHuman} ${route.quote.fromSymbol} → ~${route.quote.toAmountHuman} ${route.quote.toSymbol}`,
+        type: route.quote.mode === "plan" ? "info" : "chain",
+        text: `${label}: ${route.quote.fromAmountHuman} ${route.quote.fromSymbol} → ~${route.quote.toAmountHuman} ${route.quote.toSymbol}`,
       });
+      if (route.quote.mode === "mainnet-preview") {
+        steps.push({
+          type: "info",
+          text: `Settlement network: X Layer ${config.chainId === 196 ? "mainnet (196)" : "Testnet (" + config.chainId + ")"}`,
+        });
+      }
     }
     if (route.executed && route.swapTxHash) {
       routeSwapTx = route.swapTxHash;
@@ -336,7 +348,7 @@ export async function payX402Tool(args: {
   if (second.ok && receipt.ownershipPoints) {
     steps.push({
       type: "success",
-      text: `Network ownership +${receipt.ownershipPoints} pts (${receipt.protocolFeeBps ?? config.protocolFeeBps} bps protocol fee)`,
+      text: `XPoints +${receipt.ownershipPoints} (${receipt.protocolFeeBps ?? config.protocolFeeBps} bps protocol fee)`,
     });
   }
   return { steps, receipt };

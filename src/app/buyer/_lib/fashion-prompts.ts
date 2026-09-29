@@ -11,7 +11,7 @@ export const FASHION_WELCOME =
 export const FASHION_STARTERS = [
   "I want a t-shirt",
   "Looking for a cap",
-  "Show me the IGNORE BUYER tee",
+  "Build me a weekend outfit",
 ] as const;
 
 /** @deprecated Prefer locked PurchaseQuote — do not embed product titles in settle prompts. */

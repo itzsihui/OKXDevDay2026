@@ -32,6 +32,7 @@ type RoutePreview = {
     fromAmountHuman?: string;
     toAmountHuman?: string;
     routeSummary?: string;
+    networkLabel?: string;
     poolLabel?: string;
     hops?: string[];
     priceImpact?: string;
@@ -165,9 +166,18 @@ export function LiquidityMapPanel({
             {route?.quote ? (
               <div className="font-mono text-[11px] text-foreground/70">
                 <p>
-                  {route.quote.mode === "live" ? "Live" : "Plan"} route (OKX DEX
-                  · X Layer)
+                  {route.quote.mode === "live"
+                    ? "Live route (OKX DEX, X Layer)"
+                    : route.quote.mode === "mainnet-preview"
+                      ? "Live OKX DEX quote on X Layer mainnet (196), quote only"
+                      : "Plan only (no DEX liquidity on this network)"}
                 </p>
+                {route.quote.mode === "mainnet-preview" ? (
+                  <p className="mt-0.5 text-foreground/55">
+                    Settlement (x402 USDT0) runs on X Layer Testnet (1952). This
+                    quote is never executed.
+                  </p>
+                ) : null}
                 <p className="mt-1">
                   {route.quote.fromAmountHuman} {route.quote.fromSymbol} → ~
                   {route.quote.toAmountHuman} {route.quote.toSymbol}
@@ -233,8 +243,8 @@ export function LiquidityMapPanel({
       </div>
 
       <p className="text-xs text-foreground/55">
-        Ownership estimate after settle: <strong>+{ownershipPts} pts</strong>{" "}
-        (protocol fee accrual).
+        XPoints earned after settle: <strong>+{ownershipPts} XPoints</strong>{" "}
+        (protocol fee reward).
       </p>
     </div>
   );

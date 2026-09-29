@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   log.push({
     phase: "pitch",
-    text: "Intent → route → settle → own on X Layer (Build a Market)",
+    text: "Intent → route → settle → earn on X Layer (Build a Market)",
   });
   log.push({ phase: "merchant", text: merchantMessage });
   const merchant = await runMerchantAgent({ message: merchantMessage });
@@ -61,8 +61,8 @@ export async function POST(request: Request) {
     }
     if (x402.receipt?.ownershipPoints) {
       log.push({
-        phase: "own",
-        text: `Network ownership +${x402.receipt.ownershipPoints} pts (protocol fee ${x402.receipt.protocolFeeBps ?? config.protocolFeeBps} bps)`,
+        phase: "earn",
+        text: `XPoints +${x402.receipt.ownershipPoints} (protocol fee ${x402.receipt.protocolFeeBps ?? config.protocolFeeBps} bps)`,
       });
     }
     if (x402.receipt?.swapExplorerUrl || x402.receipt?.routeSummary) {
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     ok: true,
     pitch: {
       xlayer:
-        "Intent → liquidity route → HTTP 402 → USDT0 on X Layer → ownership",
+        "Intent → liquidity route → HTTP 402 → USDT0 on X Layer → XPoints",
       straitsx: "Scoped virtual card mandate → checkout → burn",
       aws: "Bedrock agents + API Gateway/Lambda/DynamoDB protocol slice",
       okx: "OKX DEX quote + FacilitatorClient verify/settle on X Layer",

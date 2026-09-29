@@ -10,7 +10,7 @@
 | Item | Notes |
 |------|--------|
 | Team + track | Build a Market; Remote or Singapore as chosen |
-| Project summary | Intent → route → settle → own on X Layer |
+| Project summary | Intent → route → settle → earn on X Layer |
 | Repository | This repo (public) + README contract table |
 | Demo video | 2–4 minutes (shot list below) |
 | Product link | Deployed Vercel URL |
@@ -18,11 +18,11 @@
 
 ## Demo video shot list (~3 min)
 
-1. **0:00–0:20** Landing: thesis line *Intent → Route → Settle → Own*
+1. **0:00–0:20** Landing: thesis line *Intent → Route → Settle → Earn*
 2. **0:20–0:50** `/buyer`: “Deploy funds into this tokenized asset” or fashion drop intent → picks including `/s/xlayer-rwa-desk`
 3. **0:50–1:20** Consent modal: liquidity route preview (USDT0 balance / native→USDT0 plan)
 4. **1:20–2:10** Authorize → protocol log / steps showing route + x402 + explorer link
-5. **2:10–2:40** `/buyer/ownership`: points accrued + copy invite link (`?ref=`)
+5. **2:10–2:40** `/buyer/xpoints`: XPoints earned + copy invite link (`?ref=`)
 6. **2:40–3:00** Optional: curl or Network tab `POST /s/{slug}/buy` → 402 challenge
 
 ## Deploy
@@ -49,6 +49,6 @@ Fund `BUYER_PRIVATE_KEY` with testnet OKB + USDT0 per `scripts/setup-xlayer-usdt
 Highlight commits for:
 
 - `src/lib/liquidity/route.ts` + `/api/liquidity`
-- `src/lib/ownership.ts` + `/buyer/ownership`
+- `src/lib/ownership.ts` (XPoints ledger) + `/buyer/xpoints`
 - `xlayer-rwa-desk` sample store
 - Narrative: `AI.md`, `PITCH.md`, landing problem section

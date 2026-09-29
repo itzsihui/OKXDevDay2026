@@ -35,7 +35,14 @@ export type WalletBalances = {
 };
 
 export type LiquidityQuote = {
-  mode: "live" | "plan";
+  /**
+   * live: executable on the settle chain.
+   * plan: text plan only (no usable DEX route).
+   * mainnet-preview: real OKX quote from X Layer mainnet, never executed.
+   */
+  mode: "live" | "plan" | "mainnet-preview";
+  /** Human label of which network this quote is from. */
+  networkLabel?: string;
   chainIndex: string;
   fromSymbol: string;
   toSymbol: string;
@@ -159,6 +166,79 @@ function planQuote(
   };
 }
 
+const TESTNET_PLAN_NOTE =
+  "OKX DEX lists no USDT0 liquidity on X Layer Testnet (1952)";
+
+/**
+ * Live OKX DEX quote from X Layer mainnet (196) for display while x402 settles
+ * on testnet. Sized at 0.01 OKB. Never executable.
+ */
+export async function quoteMainnetPreview(
+  fallback: LiquidityQuote,
+): Promise<LiquidityQuote> {
+  const networkLabel = "X Layer mainnet (196), quote only";
+  const planned: LiquidityQuote = {
+    ...fallback,
+    networkLabel: `Plan only. ${TESTNET_PLAN_NOTE}`,
+    routeSummary: `Plan only: ${TESTNET_PLAN_NOTE}. ${fallback.routeSummary}`,
+  };
+  if (!hasOkxDexCredentials()) return planned;
+
+  const chainIndex = config.dexPreviewChainIndex;
+  const toTokenAddress = config.dexPreviewTokenAddress;
+  const nativeIn = parseEther("0.01");
+  const qs = new URLSearchParams({
+    chainIndex,
+    amount: nativeIn.toString(),
+    fromTokenAddress: NATIVE_TOKEN,
+    toTokenAddress,
+    swapMode: "exactIn",
+  });
+  try {
+    const raw = await okxGetJson<{
+      code?: string;
+      msg?: string;
+      data?: OkxQuoteRow[];
+    }>(`/api/v6/dex/aggregator/quote?${qs.toString()}`);
+    const row = raw.data?.[0];
+    if (raw.code !== "0" || !row?.toTokenAmount) return planned;
+    const fromDec = Number(row.fromToken?.decimal ?? 18);
+    const toDec = Number(row.toToken?.decimal ?? 6);
+    const hops =
+      row.dexRouterList
+        ?.map((d) => d.dexProtocol?.dexName)
+        .filter((n): n is string => Boolean(n)) || [];
+    const dexName = hops[0] || "OKX DEX";
+    const fromSym = row.fromToken?.tokenSymbol || "OKB";
+    // Mainnet 0x779d… is USDT0; OKX labels it "USDT" in token metadata.
+    const toSym = "USDT0";
+    const poolLabel = `${fromSym}/${toSym}`;
+    return {
+      mode: "mainnet-preview",
+      networkLabel,
+      chainIndex,
+      fromSymbol: fromSym,
+      toSymbol: toSym,
+      fromAmountHuman: formatUnits(
+        BigInt(row.fromTokenAmount || nativeIn),
+        fromDec,
+      ),
+      toAmountHuman: formatUnits(BigInt(row.toTokenAmount), toDec),
+      fromTokenAddress: NATIVE_TOKEN,
+      toTokenAddress,
+      poolLabel,
+      hops: hops.length
+        ? hops.map((h) => `${fromSym} → ${toSym} via ${h}`)
+        : [`${fromSym} → ${toSym} via ${dexName}`],
+      routeSummary: `Live OKX DEX quote on X Layer mainnet (quote only): ${fromSym} → ${toSym} via ${dexName} · pool [${poolLabel}]. Settlement runs on X Layer Testnet.`,
+      priceImpact: row.priceImpactPercentage,
+      raw,
+    };
+  } catch {
+    return planned;
+  }
+}
+
 export async function quoteNativeToUsdt0(
   balances: WalletBalances,
   neededAtomic: string,
@@ -166,6 +246,7 @@ export async function quoteNativeToUsdt0(
   toSymbol = config.tokenSymbol,
 ): Promise<LiquidityQuote> {
   const fallback = planQuote(balances, neededAtomic, toTokenAddress, toSymbol);
+  if (config.dexMainnetPreview) return quoteMainnetPreview(fallback);
   if (!hasOkxDexCredentials()) return fallback;
 
   const nativeIn =
@@ -253,8 +334,14 @@ export async function executeNativeToUsdt0Swap(
   if (!hasOkxDexCredentials()) {
     return { error: "OKX credentials missing — cannot execute swap" };
   }
+  if (quote.mode === "mainnet-preview") {
+    return {
+      error:
+        "Mainnet preview is quote only. Fund USDT0 on the settle network (testnet faucet) to continue.",
+    };
+  }
   if (quote.mode !== "live") {
-    return { error: "Live DEX quote unavailable — fund USDT0 or retry on mainnet liquidity" };
+    return { error: "Live DEX quote unavailable. Fund USDT0 or retry on mainnet liquidity." };
   }
 
   const fromAmountAtomic = (() => {
@@ -358,12 +445,21 @@ export async function ensureUsdt0Liquidity(args: {
   }
 
   if (balances.hasEnoughUsdt0) {
+    // Balance covers the purchase. On testnet still surface the live mainnet
+    // OKX quote so the DEX integration is visible (never executed).
+    const preview = config.dexMainnetPreview
+      ? await quoteMainnetPreview(
+          planQuote(balances, neededAtomic, toTokenAddress, toSymbol),
+        )
+      : null;
     return {
       needed: false,
       balances,
-      quote: null,
+      quote: preview,
       executed: false,
-      message: `${toSymbol} balance ${balances.usdt0Human} covers purchase`,
+      message: preview
+        ? `${toSymbol} balance ${balances.usdt0Human} covers purchase, so no swap is needed. ${preview.routeSummary}`
+        : `${toSymbol} balance ${balances.usdt0Human} covers purchase`,
     };
   }
 

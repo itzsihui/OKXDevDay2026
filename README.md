@@ -7,7 +7,7 @@
 [![Protocol](https://img.shields.io/badge/Open%20protocol-any%20HTTP%20agent-23292F?style=for-the-badge)](#borneo)
 [![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 
-**Intent → route → settle → own. AI shopping on X Layer.**
+**Intent → route → settle → earn. AI shopping on X Layer.**
 
 Landing → [http://localhost:3000](http://localhost:3000) · OKX docs map → [`docs/okx-onchainos.md`](./docs/okx-onchainos.md) · Pitch → [`PITCH.md`](./PITCH.md)
 
@@ -21,13 +21,13 @@ Users hold fragmented assets. Buying products, tokenized RWAs, or micro-payments
 
 ## Borneo @ OKX Dev Day (Build a Market)
 
-**An AI-native shopping agent** takes natural-language intent, **routes liquidity on X Layer** into USDT0 via OKX DEX, **settles with x402**, and accrues **network ownership** from a protocol micro-fee — so conversion is seamless *and* users earn stake.
+**An AI-native shopping agent** takes natural-language intent, **routes liquidity on X Layer** into USDT0 via OKX DEX, **settles with x402**, and credits **XPoints** from a protocol micro-fee — so conversion is seamless *and* users earn rewards.
 
 ```mermaid
 flowchart LR
   intent[Intent_chat] --> route[Liquidity_route]
   route --> settle[USDT0_x402_XLayer]
-  settle --> own[Ownership_points]
+  settle --> earn[XPoints]
 ```
 
 | Step | Surface |
@@ -35,12 +35,12 @@ flowchart LR
 | Intent | `/buyer` salesperson + `GET /api/search` |
 | Route | `GET/POST /api/liquidity` · OKX DEX · outfit liquidity map |
 | Buy (A2MCP-shaped) | `POST /s/{slug}/buy` → **402** → authorize → settle |
-| Own | `/buyer/ownership` · invite `?ref=` boost |
+| Earn | `/buyer/xpoints` · invite `?ref=` boost |
 | Outfit demo | `/s/atelier-tee` · `/s/harbor-caps` · `/s/stride-kicks` |
 | RWA demo | `/s/xlayer-rwa-desk` tokenized claim SKUs |
 | Skills | [`.agents/skills/borneo-registry-shop`](./.agents/skills/borneo-registry-shop/SKILL.md), Onchain OS pack |
 
-**Do not scrape HTML.** Catalog prose never enters the pay path — settle only sees a locked quote (`storeSlug`, `skuId`, `price`, `merchantAddress`). Merchant still receives **full listed USDT0**; ownership is app-layer accrual from `PROTOCOL_FEE_BPS`.
+**Do not scrape HTML.** Catalog prose never enters the pay path — settle only sees a locked quote (`storeSlug`, `skuId`, `price`, `merchantAddress`). Merchant still receives **full listed USDT0**; XPoints are an app-layer rewards ledger driven by `PROTOCOL_FEE_BPS` (not a token or security).
 
 ---
 
@@ -56,10 +56,10 @@ npm run dev
 
 | Path | What it is |
 |---|---|
-| `/` | Landing — intent → route → settle → own |
+| `/` | Landing — intent → route → settle → earn |
 | `/merchant` · `/onboard` | Seller chat → publish agent storefront |
 | `/buyer` | Intent chat → route preview → USDT0 / Visa |
-| `/buyer/ownership` | Network stake + friend invite loop |
+| `/buyer/xpoints` | XPoints balance + friend invite loop |
 | `/market` | Marketplace index (fashion + RWA desk) |
 | `/api/search?q=` | Intent search |
 | `/api/liquidity?price=` | Liquidity route preview |
@@ -75,7 +75,7 @@ npm run dev
 | `BUYER_PRIVATE_KEY` | Server-side x402 + optional DEX swap |
 | `MERCHANT_ADDRESS` | Default merchant payTo (`0x…`) |
 | `OKX_API_KEY` / `OKX_SECRET_KEY` / `OKX_PASSPHRASE` | Facilitator + DEX quote |
-| `PROTOCOL_FEE_BPS` | Ownership accrual rate (default `50`) |
+| `PROTOCOL_FEE_BPS` | XPoints accrual rate (default `50`) |
 | `TREASURY_ADDRESS` | Fee narrative address |
 | `XLAYER_NETWORK` | `eip155:1952` (testnet) or `eip155:196` |
 
@@ -108,7 +108,7 @@ npx skills add okx/onchainos-skills --yes
 - [ ] Primary track: **Build a Market**
 - [ ] Public repo + this README
 - [ ] Live product URL (https://okx-dev-day2026.vercel.app)
-- [ ] Demo video 2–4 min: intent → route → settle → ownership (+ optional RWA SKU)
+- [ ] Demo video 2–4 min: intent → route → settle → earn XPoints (+ optional RWA SKU)
 - [ ] Contract / explorer links in video or README
 - [ ] Submit by **25 Sep 2026 23:59 UTC** → https://forms.gle/81S2gnFCzqSoeDEA7
 

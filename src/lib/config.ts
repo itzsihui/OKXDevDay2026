@@ -37,6 +37,16 @@ export const config = {
    */
   altSettleToken: env("ALT_SETTLE_TOKEN", USDT0_TESTNET),
   altSettleSymbol: env("ALT_SETTLE_SYMBOL", "USDT0"),
+  /**
+   * OKX DEX lists no USDT0 liquidity on X Layer Testnet (1952). When settling on
+   * testnet, show a live quote from X Layer mainnet (196) instead. Quote only:
+   * swaps are never broadcast from a mainnet preview. Set to 0 to disable.
+   */
+  get dexMainnetPreview() {
+    return this.chainId !== 196 && process.env.OKX_DEX_MAINNET_PREVIEW !== "0";
+  },
+  dexPreviewChainIndex: "196",
+  dexPreviewTokenAddress: USDT0_MAINNET,
   /** Demo unit price in USDT0 on X Layer. */
   demoUnitPriceXsgd: "0.01",
   merchantAddress: env(
@@ -84,7 +94,7 @@ export const config = {
     );
   },
   /**
-   * Protocol micro-fee in basis points (app-layer ownership accrual).
+   * Protocol micro-fee in basis points (app-layer XPoints accrual).
    * Merchant still receives full listed USDT0 via x402.
    */
   protocolFeeBps: Number(env("PROTOCOL_FEE_BPS", "50")),

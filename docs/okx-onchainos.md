@@ -25,7 +25,7 @@ Agentic Wallet / MCP tooling.
 | `GET /api/liquidity` | X Layer balance + OKX DEX route (native → USDT0) |
 | `GET /s/{slug}/llms.txt` | Per-store agent discovery |
 | `POST /s/{slug}/buy` | A2MCP-shaped x402 buy (402 → pay → 200) |
-| `/buyer/ownership` | Protocol fee → network ownership + invite loop |
+| `/buyer/xpoints` | Protocol fee → XPoints + invite loop |
 | Visa `/checkout` | Optional scoped-card mandate rail |
 | Cursor MCP `onchainos` | Wallet / market / payment tools for builders |
 

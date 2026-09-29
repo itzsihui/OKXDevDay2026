@@ -32,7 +32,7 @@ const TURNS = [
   { who: "You", text: "Authorize." },
   {
     who: "Agent",
-    text: "Routed liquidity, settled x402, credited network ownership.",
+    text: "Routed liquidity, settled x402, and you earned XPoints.",
   },
 ];
 
@@ -127,7 +127,7 @@ export function LandingHome() {
                   "landing-rise font-[family-name:var(--font-syne)] text-[clamp(2rem,5vw,3.5rem)] font-semibold leading-[1.12] tracking-tight text-[var(--landing-fog)] pb-1",
                 )}
               >
-                Intent to ownership — settle on X Layer.
+                Intent to XPoints — settle on X Layer.
               </h1>
               <p
                 className={cn(
@@ -135,8 +135,8 @@ export function LandingHome() {
                 )}
               >
                 Say what you want. Borneo routes wallet liquidity into USDT0,
-                settles via x402, and credits network ownership — open to any
-                HTTP agent, not locked inside two chat apps.
+                settles via x402, and earns you XPoints — open to any HTTP
+                agent, not locked inside two chat apps.
               </p>
             </div>
           </main>
@@ -175,7 +175,7 @@ export function LandingHome() {
               </h2>
               <p className="mt-2 max-w-[36ch] text-sm leading-relaxed text-[var(--landing-fog)]/60">
                 Intent in chat — routes liquidity when needed, settles USDT0 on
-                X Layer after you authorize, earns network ownership.
+                X Layer after you authorize, earns XPoints.
               </p>
               <span className="mt-6 inline-flex text-sm font-medium text-[var(--landing-jade)] group-hover:underline">
                 Continue to Shop

@@ -67,7 +67,7 @@ function productText(p: MarketProduct) {
     t?.kind,
     t?.underlying,
     t?.kind === "rwa" ? "tokenized real-world asset RWA" : "",
-    t?.kind === "tokenized-equity" ? "tokenized equity ownership stake" : "",
+    t?.kind === "tokenized-equity" ? "tokenized equity ownership units" : "",
   ]
     .filter(Boolean)
     .join(" · ");

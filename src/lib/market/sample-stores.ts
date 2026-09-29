@@ -446,7 +446,7 @@ export function sampleMarketStores(
           id: "tokenized-equity-drop",
           title: "Borneo Network Equity Drop / Demo",
           description:
-            "Tokenized equity-like network stake drop. Buy with intent ('deploy funds into this asset'); agent routes liquidity then settles on X Layer.",
+            "Tokenized equity-like network units drop. Buy with intent ('deploy funds into this asset'); agent routes liquidity then settles on X Layer.",
           quantity: 40,
           price: "0.02",
           attrs: {
