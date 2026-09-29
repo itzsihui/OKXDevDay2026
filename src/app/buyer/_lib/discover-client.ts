@@ -192,7 +192,11 @@ export async function discoverFashionPicks(
     );
   }
 
-  const budgetMax = parseBudgetMax(profile);
+  const luxuryHunt = [...queries, intent].some((q) =>
+    /\b(expensive|premium|luxury|most-expensive|overcoat)\b/i.test(q),
+  );
+
+  const budgetMax = luxuryHunt ? null : parseBudgetMax(profile);
   if (budgetMax != null) {
     products = products.filter((p) => {
       const price = Number(p.price);
@@ -231,11 +235,24 @@ export async function discoverFashionPicks(
     }
   }
 
+  if (luxuryHunt) {
+    // Pin the priciest clean SKU regardless of fit scoring.
+    let top: { product: SearchApiProduct; q: QuarantinedSku } | null = null;
+    for (const product of products) {
+      const q = qByKey.get(`${product.storeSlug}:${product.id}`);
+      if (!q?.safeForFashionRank) continue;
+      const price = Number(product.price);
+      if (!Number.isFinite(price)) continue;
+      if (!top || price > Number(top.product.price)) top = { product, q };
+    }
+    if (top) {
+      const pick = toPick(top.product, top.q, 1000);
+      scored.set(pick.id, pick);
+    }
+  }
+
   let picks = [...scored.values()].sort((a, b) => b.score - a.score);
 
-  const luxuryHunt = [...queries, intent].some((q) =>
-    /\b(expensive|premium|luxury|most-expensive|overcoat)\b/i.test(q),
-  );
   if (luxuryHunt) {
     picks.sort((a, b) => {
       const pa = Number(a.price);
