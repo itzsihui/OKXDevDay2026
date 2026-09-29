@@ -65,6 +65,7 @@ Think like a salesperson in a store — reason from CONTEXT, not a fixed keyword
 - Party / night out: festive/casual complementary pieces — not office polish.
 - Hackathon: comfy tees and casual shirts (event merch OK) — not formal dresses.
 - Clear single item ("a tee", "jeans") → status "ready"; search that item; do not over-ask.
+- Most expensive / premium / luxury / highest-priced item → status "ready" immediately. searchQueries MUST be ["expensive","premium","overcoat","most-expensive"]. Do NOT ask occasion first and do NOT swap to shirt/pants/poplin.
 - When ready: SHORT catalog nouns merchants would list (shirt, pants, jeans, dress, blouse…) — NOT the user's full sentence. For complementary looks: searchQuery like "shirt pants", searchQueries ["shirt","pants","jeans"]. Include jeans when hunting bottoms.
 - thoughts (required, 2–5 lines): first-person reasoning about THIS ask — what occasion/vibe you inferred and why those garment roles. Do NOT claim you already found products. Example kind: "Party → festive/casual; complementary top + bottoms makes sense."
 - Fill profile.style / profile.items from your inference when known.
@@ -98,6 +99,7 @@ function intentText(messages: ChatMessage[]): string {
     detectItem(latest) !== "unknown" ||
     isVagueOccasionAsk(latest) ||
     wantsExplicitSet(latest) ||
+    wantsMostExpensive(latest) ||
     isMetaHelpAsk(latest);
   if (latestHasSignal) return latest;
 
@@ -299,6 +301,17 @@ function wantsExplicitSet(text: string): boolean {
 }
 
 /** Vague dressing context without a named SKU — for fallback clarify, not a closed occasion map. */
+function wantsMostExpensive(text: string): boolean {
+  const t = normalizeFashionTypos(text);
+  return (
+    /\bmost\s+expens/.test(t) ||
+    /\b(highest|max)[- ]?(price|priced|cost)\b/.test(t) ||
+    /\b(premium|luxury|high[- ]value)\b/.test(t) ||
+    /\bexpens(?:ive|iv)\s+(?:item|piece|sku|product|coat|thing)\b/.test(t) ||
+    /\b100\s*(usdc|usdt0|usd)\b/.test(t)
+  );
+}
+
 function isVagueOccasionAsk(text: string): boolean {
   const t = normalizeQuestion(text);
   if (!t || isMetaHelpAsk(t)) return false;
@@ -374,6 +387,32 @@ const WEEKEND_SET = {
   ],
 } as const;
 
+const PREMIUM_SET = {
+  searchQuery: "expensive premium overcoat most-expensive",
+  searchQueries: [
+    "expensive",
+    "premium",
+    "overcoat",
+    "most-expensive",
+    "coat",
+  ],
+} as const;
+
+function isPremiumProfile(profile?: FashionProfile, style?: string): boolean {
+  const occasion = (profile?.occasion || "").toLowerCase();
+  const s = (style || profile?.style || "").toLowerCase();
+  const item = (profile?.item || "").toLowerCase();
+  return (
+    s === "premium" ||
+    occasion === "premium" ||
+    /\b(premium|luxury|expensive)\b/.test(s) ||
+    /\b(premium|expensive|overcoat)\b/.test(item) ||
+    (profile?.items || []).some((i) =>
+      /\b(expensive|premium|overcoat|most-expensive)\b/i.test(i),
+    )
+  );
+}
+
 function isHackathonProfile(profile?: FashionProfile, style?: string): boolean {
   const occasion = (profile?.occasion || "").toLowerCase();
   const s = (style || profile?.style || "").toLowerCase();
@@ -411,6 +450,7 @@ function isWorkProfile(profile?: FashionProfile, style?: string): boolean {
     isPartyProfile(profile, style) ||
     isHackathonProfile(profile, style) ||
     isWeekendProfile(profile, style) ||
+    isPremiumProfile(profile, style) ||
     occasion === "date" ||
     s === "date"
   ) {
@@ -427,6 +467,12 @@ function huntForOccasion(
   profile?: FashionProfile,
   style?: string,
 ): { searchQuery: string; searchQueries: string[] } {
+  if (isPremiumProfile(profile, style) || style === "premium") {
+    return {
+      searchQuery: PREMIUM_SET.searchQuery,
+      searchQueries: [...PREMIUM_SET.searchQueries],
+    };
+  }
   if (isHackathonProfile(profile, style)) {
     return {
       searchQuery: HACKATHON_SET.searchQuery,
@@ -479,6 +525,7 @@ function catalogSearchFromProfile(
 
   // Occasion-shaped hunts always win over a stale tee/shirt list from the LLM
   if (
+    isPremiumProfile(effective, style) ||
     isHackathonProfile(effective, style) ||
     isWeekendProfile(effective, style) ||
     isWorkProfile(effective, style) ||
@@ -486,7 +533,8 @@ function catalogSearchFromProfile(
     effective.occasion === "date" ||
     style === "date" ||
     style === "professional" ||
-    style === "weekend"
+    style === "weekend" ||
+    style === "premium"
   ) {
     return huntForOccasion(effective, style);
   }
@@ -582,7 +630,12 @@ function enrichProfile(
                 ? "tee"
                 : profile?.item;
   }
-  if (style) next.style = style;
+  if (style && !wantsMostExpensive(corpus)) next.style = style;
+  if (wantsMostExpensive(corpus)) {
+    next.style = "premium";
+    next.item = "premium overcoat";
+    next.items = [...PREMIUM_SET.searchQueries];
+  }
   if (
     !next.items?.length &&
     (item === "outfit" ||
@@ -664,6 +717,37 @@ export function ensureConversationProgress(
         "Explain chat → clarify → search catalogs → pay, then ask what they want.",
       ],
       profile: { category: "fashion" },
+      llm: result.llm,
+    };
+  }
+
+  const allUserText = messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content)
+    .join("\n");
+  if (wantsMostExpensive(allUserText) || wantsMostExpensive(latest)) {
+    const premiumProfile = {
+      ...profile,
+      style: "premium",
+      item: "premium overcoat",
+      items: [...PREMIUM_SET.searchQueries],
+    };
+    const catalog = catalogSearchFromProfile(messages, premiumProfile);
+    return {
+      ...result,
+      status: "ready",
+      searchQuery: catalog.searchQuery,
+      searchQueries: catalog.searchQueries,
+      suggestions: [],
+      reply:
+        result.status === "ready" && result.reply
+          ? result.reply
+          : "The highest-priced piece on the network is a wool overcoat quoted at 100 USDC (settles 100 USDT0). I'll pull it now.",
+      thoughts: [
+        ...(result.thoughts || []),
+        "Most-expensive ask wins — hunt premium/overcoat, not shirt/pants.",
+      ].slice(-6),
+      profile: premiumProfile,
       llm: result.llm,
     };
   }
@@ -884,6 +968,12 @@ export function runDeterministicSalesperson(
     if (budget) profile.budget = `${budget[1]} ${(budget[2] || "USDT0").toUpperCase()}`;
   }
 
+  if (wantsMostExpensive(userCorpus) || wantsMostExpensive(latest)) {
+    profile.style = "premium";
+    profile.item = "premium overcoat";
+    profile.items = [...PREMIUM_SET.searchQueries];
+  }
+
   if (turns === 0 || (!latest && turns <= 1)) {
     return {
       reply:
@@ -911,6 +1001,35 @@ export function runDeterministicSalesperson(
       profile: { category: "fashion" },
       llm: "deterministic",
     };
+  }
+
+  if (wantsMostExpensive(userCorpus) || wantsMostExpensive(latest)) {
+    const catalog = catalogSearchFromProfile(messages, {
+      ...profile,
+      style: "premium",
+      item: "premium overcoat",
+      items: [...PREMIUM_SET.searchQueries],
+    });
+    return ensureConversationProgress(messages, {
+      reply:
+        "The highest-priced piece on the network is a wool overcoat quoted at 100 USDC (settles 100 USDT0). I'll pull it now.",
+      suggestions: [],
+      status: "ready",
+      searchQuery: catalog.searchQuery,
+      searchQueries: catalog.searchQueries,
+      thoughts: [
+        "They asked for the most expensive item — skip occasion clarify.",
+        `Catalog hunt: ${catalog.searchQueries.join(" + ")}`,
+      ],
+      profile: {
+        category: "fashion",
+        style: "premium",
+        item: "premium overcoat",
+        items: catalog.searchQueries.slice(0, 5),
+        occasion: profile.occasion,
+      },
+      llm: "deterministic",
+    });
   }
 
   // Mid-chat vibe switch — latest turn occasion wins (e.g. party after presentation)

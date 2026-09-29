@@ -233,8 +233,22 @@ export async function discoverFashionPicks(
 
   let picks = [...scored.values()].sort((a, b) => b.score - a.score);
 
+  const luxuryHunt = [...queries, intent].some((q) =>
+    /\b(expensive|premium|luxury|most-expensive|overcoat)\b/i.test(q),
+  );
+  if (luxuryHunt) {
+    picks.sort((a, b) => {
+      const pa = Number(a.price);
+      const pb = Number(b.price);
+      if (Number.isFinite(pb) && Number.isFinite(pa) && pb !== pa) {
+        return pb - pa;
+      }
+      return b.score - a.score;
+    });
+  }
+
   // Outfit / shirt+pants hunts: drop accessories that snuck through
-  if (huntingGarments) {
+  if (huntingGarments && !luxuryHunt) {
     picks = picks.filter((p) => {
       const role = apparelRole(p.title);
       if (role === "top" || role === "bottom" || role === "outer") return true;
@@ -247,9 +261,15 @@ export async function discoverFashionPicks(
   }
 
   const limit = queries.length > 1 ? 6 : 5;
-  const outfitFirst = diversifyOutfitPicks(picks, queries, qByKey);
+  const outfitFirst = luxuryHunt
+    ? picks
+    : diversifyOutfitPicks(picks, queries, qByKey);
   picks = (
-    queries.length > 1 ? outfitFirst : diversifyByStore(outfitFirst, limit)
+    luxuryHunt
+      ? outfitFirst
+      : queries.length > 1
+        ? outfitFirst
+        : diversifyByStore(outfitFirst, limit)
   ).slice(0, limit);
 
   const flagged = [...flaggedSeen.values()];
@@ -339,8 +359,8 @@ function isProfessionalOccasion(profile?: FashionProfile | null): boolean {
   const occasion = (profile?.occasion || "").toLowerCase();
   const style = (profile?.style || "").toLowerCase();
   if (
-    /\b(hackathon|party|date)\b/.test(occasion) ||
-    /\b(hackathon|party|date)\b/.test(style)
+    /\b(hackathon|party|date|premium)\b/.test(occasion) ||
+    /\b(hackathon|party|date|premium)\b/.test(style)
   ) {
     return false;
   }
@@ -383,6 +403,14 @@ function occasionFitDelta(
   if (!profile?.occasion && !profile?.style) return 0;
   const title = rankTitle(product, q);
   const hay = normalize(`${product.id} ${title} ${product.description || ""}`);
+
+  if (/\bpremium\b/.test((profile?.style || "").toLowerCase())) {
+    const price = Number(product.price);
+    let d = 0;
+    if (/\b(overcoat|wool|expensive|premium|signature)\b/.test(hay)) d += 90;
+    if (Number.isFinite(price)) d += Math.min(price, 200);
+    return d;
+  }
 
   if (isHackathonOccasion(profile)) {
     if (/\b(poison|lanyard)\b/.test(hay)) return -1000;
@@ -428,6 +456,7 @@ function occasionFitDelta(
     if (/\b(camp\s*shirt|linen\s*camp)\b/.test(hay)) d += 8;
     if (/\b(pant|trouser|chino)\b/.test(hay)) d += 50;
     if (/\b(ballet\s*flat|pointed\s*flat|mary\s*jane)\b/.test(hay)) d += 20;
+    if (/\b(overcoat|wool|premium|expensive)\b/.test(hay)) d += 80;
     return d;
   }
 

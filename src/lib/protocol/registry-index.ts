@@ -104,7 +104,14 @@ export function buildRegistryIndexEntry(
     colors: uniqCap(colors, FACET_CAP),
     sizes: uniqCap(sizes, FACET_CAP),
     materials: uniqCap(materials, FACET_CAP),
-    sampleTitles: store.skus.slice(0, SAMPLE_TITLE_CAP).map((s) => s.title),
+    sampleTitles: uniqCap(
+      [
+        ...store.skus.slice(0, SAMPLE_TITLE_CAP).map((s) => s.title),
+        ...store.skus.flatMap((s) => s.attrs?.tags ?? []),
+        ...store.skus.map((s) => s.id),
+      ],
+      SAMPLE_TITLE_CAP + 12,
+    ),
     ratingAvg: reviewAgg?.ratingAvg ?? null,
     ratingCount: reviewAgg?.ratingCount ?? 0,
     updatedAt: store.updatedAt || now,
@@ -179,6 +186,12 @@ export function scoreRegistryIndexEntry(
     if (hay.includes(t)) score += 1;
     if (entry.subcategories.some((s) => s.toLowerCase() === t)) score += 2;
     if (entry.colors.some((c) => c.toLowerCase() === t)) score += 1.5;
+  }
+  if (
+    /\b(expensive|premium|luxury|most-expensive|overcoat)\b/.test(q) &&
+    entry.priceMax >= 1
+  ) {
+    score += Math.min(entry.priceMax, 200);
   }
   return score;
 }
