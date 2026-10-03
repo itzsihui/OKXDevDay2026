@@ -54,8 +54,40 @@ import {
 } from "./_lib/chat-threads";
 import { formatFlagSummary, discoverFashionPicks } from "./_lib/discover-client";
 import type { SalespersonResult } from "./_lib/salesperson";
+import type { NeedsLiquidity } from "@/lib/agents/tools-buyer";
 
 const META_ROLE = "buyer-flow-meta";
+
+function formatNeedsLiquidity(n: NeedsLiquidity, title: string): string {
+  const sym = n.settleSymbol;
+  const chain = n.network === "eip155:196" ? "X Layer mainnet" : "X Layer Testnet";
+  const lines = [
+    `Not enough ${sym} for ${title}. Nothing was paid.`,
+    `Price ${n.price} ${sym}. Wallet ${n.walletAddress.slice(0, 8)}… holds ${n.balanceHuman} ${sym} on ${chain}, short ${n.shortfallHuman} ${sym}.`,
+  ];
+  const r = n.route;
+  if (r) {
+    const header =
+      r.mode === "mainnet-preview"
+        ? "OKX DEX route (live quote on X Layer mainnet 196, quote only):"
+        : r.mode === "live"
+          ? "OKX DEX route (live, executable):"
+          : "OKX DEX route (plan only, no DEX liquidity on this network):";
+    lines.push("", header);
+    lines.push(
+      `Swap ${Number(r.fromAmountHuman).toFixed(4)} ${r.fromSymbol} for ~${Number(r.toAmountHuman).toFixed(2)} ${r.toSymbol}${r.poolLabel ? ` · pool ${r.poolLabel}` : ""}`,
+    );
+    for (const hop of r.hops ?? []) lines.push(`• ${hop}`);
+    if (r.priceImpact) lines.push(`Price impact ${r.priceImpact}%`);
+  }
+  lines.push(
+    "",
+    r?.mode === "mainnet-preview"
+      ? `x402 settles on ${chain}, where OKX DEX has no ${sym} pool. Top up ${sym} on ${chain}, then buy again.`
+      : `Top up ${sym} or OKB, then buy again.`,
+  );
+  return lines.join("\n");
+}
 
 type PersistedMeta = {
   selectedId: string | null;
@@ -1019,7 +1051,26 @@ export default function BuyerPage() {
                   swapExplorerUrl?: string;
                   routeSummary?: string;
                 };
+                needsLiquidity?: NeedsLiquidity;
               };
+              const short = data.needsLiquidity;
+              if (short) {
+                const content = formatNeedsLiquidity(short, line.title);
+                setState((prev) => ({
+                  ...prev,
+                  phase: "chat",
+                  busy: false,
+                  detailOpen: false,
+                  cartCheckoutOpen: false,
+                  messages: [...prev.messages, { role: "assistant", content }],
+                  steps: updateStep(prev.steps, "settle", {
+                    status: "error",
+                    description: `Not enough ${short.settleSymbol}. OKX DEX route shown, nothing was paid.`,
+                    bullets: short.route?.hops,
+                  }),
+                }));
+                return;
+              }
               if (
                 (data.steps ?? []).some((s) => s.type === "error") ||
                 !(data.steps ?? []).some((s) => s.type === "success")

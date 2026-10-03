@@ -5,6 +5,7 @@ import {
   encodePaymentRequiredHeader,
   decodePaymentSignatureHeader,
 } from "@okxweb3/x402-core/http";
+import { createPublicClient, http } from "viem";
 import type {
   PaymentPayload,
   PaymentRequired,
@@ -110,6 +111,49 @@ function facilitator() {
 }
 
 /**
+ * A facilitator tx hash is not proof of payment: the transfer can still revert
+ * (e.g. insufficient balance). Require a successful on-chain receipt.
+ */
+async function confirmSettlement(
+  client: OKXFacilitatorClient,
+  txHash: string,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const rpc = createPublicClient({ transport: http(config.rpcUrl) });
+  const deadline = Date.now() + 25_000;
+  while (Date.now() < deadline) {
+    try {
+      const receipt = await rpc.getTransactionReceipt({
+        hash: txHash as `0x${string}`,
+      });
+      return receipt.status === "success"
+        ? { ok: true }
+        : { ok: false, reason: `Settlement tx ${txHash} reverted on-chain` };
+    } catch {
+      // Not mined yet; fall through to facilitator status.
+    }
+    try {
+      const status = await client.getSettleStatus(txHash);
+      if (status.status === "failed" || (!status.success && status.errorReason)) {
+        return {
+          ok: false,
+          reason:
+            status.errorReason ||
+            status.errorMessage ||
+            `Settlement tx ${txHash} failed`,
+        };
+      }
+    } catch {
+      // Status endpoint is best-effort.
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  return {
+    ok: false,
+    reason: `Settlement tx ${txHash} not confirmed on-chain in time`,
+  };
+}
+
+/**
  * Verify + settle a signed EVM payment via the OKX facilitator.
  */
 export async function verifyAndSettle(args: {
@@ -145,6 +189,11 @@ export async function verifyAndSettle(args: {
           settled.errorMessage ||
           "Facilitator settle failed",
       };
+    }
+
+    const confirmed = await confirmSettlement(client, settled.transaction);
+    if (!confirmed.ok) {
+      return { ok: false as const, reason: confirmed.reason };
     }
 
     return {

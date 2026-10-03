@@ -1,3 +1,4 @@
+import { formatUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { x402Client } from "@okxweb3/x402-core/client";
 import { encodePaymentSignatureHeader } from "@okxweb3/x402-core/http";
@@ -31,6 +32,29 @@ export type BuyerReceipt = {
   [key: string]: unknown;
 };
 
+/** Wallet cannot cover the price and no swap ran, so nothing was signed. */
+export type NeedsLiquidity = {
+  settleSymbol: string;
+  network: string;
+  price: string;
+  balanceHuman: string;
+  shortfallHuman: string;
+  walletAddress: string;
+  route: {
+    mode: "live" | "plan" | "mainnet-preview";
+    networkLabel?: string;
+    fromAmountHuman: string;
+    fromSymbol: string;
+    toAmountHuman: string;
+    toSymbol: string;
+    poolLabel?: string;
+    hops?: string[];
+    priceImpact?: string;
+    routeSummary: string;
+  } | null;
+  reason: string;
+};
+
 /** Locked settle quote — no product titles or catalog prose. */
 export type PayQuote = {
   storeSlug: string;
@@ -55,7 +79,11 @@ export async function payX402Tool(args: {
   product?: string;
   quote?: PayQuote;
   buyerUid?: string;
-}): Promise<{ steps: BuyerStep[]; receipt?: BuyerReceipt }> {
+}): Promise<{
+  steps: BuyerStep[];
+  receipt?: BuyerReceipt;
+  needsLiquidity?: NeedsLiquidity;
+}> {
   const steps: BuyerStep[] = [];
   const quote = args.quote;
   const buyerUid = args.buyerUid?.trim() || undefined;
@@ -147,6 +175,7 @@ export async function payX402Tool(args: {
   });
   let routeSwapTx: string | undefined;
   let routeSummary: string | undefined;
+  let needsLiquidity: NeedsLiquidity | undefined;
   try {
     const route = await ensureUsdt0Liquidity({
       price: expectedPrice,
@@ -189,11 +218,48 @@ export async function payX402Tool(args: {
     } else {
       steps.push({ type: "info", text: route.message });
     }
+    if (route.balances && !route.balances.hasEnoughUsdt0 && !route.executed) {
+      const q = route.quote;
+      needsLiquidity = {
+        settleSymbol,
+        network: config.network,
+        price: expectedPrice,
+        balanceHuman: route.balances.usdt0Human,
+        shortfallHuman: formatUnits(
+          BigInt(route.balances.shortfallAtomic),
+          config.tokenDecimals,
+        ),
+        walletAddress: route.balances.address,
+        route: q
+          ? {
+              mode: q.mode,
+              networkLabel: q.networkLabel,
+              fromAmountHuman: q.fromAmountHuman,
+              fromSymbol: q.fromSymbol,
+              toAmountHuman: q.toAmountHuman,
+              toSymbol: q.toSymbol,
+              poolLabel: q.poolLabel,
+              hops: q.hops,
+              priceImpact: q.priceImpact,
+              routeSummary: q.routeSummary,
+            }
+          : null,
+        reason: route.message,
+      };
+    }
   } catch (error) {
     steps.push({
       type: "info",
       text: `Liquidity check skipped: ${error instanceof Error ? error.message : "unknown"}`,
     });
+  }
+
+  if (needsLiquidity) {
+    steps.push({
+      type: "info",
+      text: `Stopped before signing: wallet holds ${needsLiquidity.balanceHuman} ${settleSymbol}, needs ${expectedPrice} (short ${needsLiquidity.shortfallHuman}). No payment was made.`,
+    });
+    return { steps, needsLiquidity };
   }
 
   const orderId = crypto.randomUUID();

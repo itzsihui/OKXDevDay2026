@@ -171,10 +171,12 @@ const TESTNET_PLAN_NOTE =
 
 /**
  * Live OKX DEX quote from X Layer mainnet (196) for display while x402 settles
- * on testnet. Sized at 0.01 OKB. Never executable.
+ * on testnet. Sized at 0.01 OKB, or to cover `targetAtomic` USDT0 when given.
+ * Never executable.
  */
 export async function quoteMainnetPreview(
   fallback: LiquidityQuote,
+  targetAtomic?: string,
 ): Promise<LiquidityQuote> {
   const networkLabel = "X Layer mainnet (196), quote only";
   const planned: LiquidityQuote = {
@@ -186,22 +188,41 @@ export async function quoteMainnetPreview(
 
   const chainIndex = config.dexPreviewChainIndex;
   const toTokenAddress = config.dexPreviewTokenAddress;
-  const nativeIn = parseEther("0.01");
-  const qs = new URLSearchParams({
-    chainIndex,
-    amount: nativeIn.toString(),
-    fromTokenAddress: NATIVE_TOKEN,
-    toTokenAddress,
-    swapMode: "exactIn",
-  });
-  try {
+  const fetchQuote = async (amountWei: bigint) => {
+    const qs = new URLSearchParams({
+      chainIndex,
+      amount: amountWei.toString(),
+      fromTokenAddress: NATIVE_TOKEN,
+      toTokenAddress,
+      swapMode: "exactIn",
+    });
     const raw = await okxGetJson<{
       code?: string;
       msg?: string;
       data?: OkxQuoteRow[];
     }>(`/api/v6/dex/aggregator/quote?${qs.toString()}`);
-    const row = raw.data?.[0];
-    if (raw.code !== "0" || !row?.toTokenAmount) return planned;
+    return { raw, row: raw.code === "0" ? raw.data?.[0] : undefined };
+  };
+  try {
+    let nativeIn = parseEther("0.01");
+    let { raw, row } = await fetchQuote(nativeIn);
+    if (!row?.toTokenAmount) return planned;
+
+    const target = targetAtomic ? BigInt(targetAtomic) : 0n;
+    const probeOut = BigInt(row.toTokenAmount);
+    if (target > 0n && probeOut > 0n) {
+      // Scale the probe rate to the shortfall, plus 1% for price impact.
+      const sized = (nativeIn * target * 101n) / (probeOut * 100n);
+      if (sized > 0n) {
+        const resized = await fetchQuote(sized);
+        if (resized.row?.toTokenAmount) {
+          nativeIn = sized;
+          raw = resized.raw;
+          row = resized.row;
+        }
+      }
+    }
+    if (!row?.toTokenAmount) return planned;
     const fromDec = Number(row.fromToken?.decimal ?? 18);
     const toDec = Number(row.toToken?.decimal ?? 6);
     const hops =
@@ -246,7 +267,12 @@ export async function quoteNativeToUsdt0(
   toSymbol = config.tokenSymbol,
 ): Promise<LiquidityQuote> {
   const fallback = planQuote(balances, neededAtomic, toTokenAddress, toSymbol);
-  if (config.dexMainnetPreview) return quoteMainnetPreview(fallback);
+  if (config.dexMainnetPreview) {
+    return quoteMainnetPreview(
+      fallback,
+      balances.shortfallAtomic !== "0" ? balances.shortfallAtomic : undefined,
+    );
+  }
   if (!hasOkxDexCredentials()) return fallback;
 
   const nativeIn =
