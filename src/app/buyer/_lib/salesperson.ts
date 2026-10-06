@@ -64,7 +64,8 @@ Think like a salesperson in a store — reason from CONTEXT, not a fixed keyword
 - Work / presentation / interview / formal event: polished catalog nouns — never tee/crop/palm.
 - Party / night out: festive/casual complementary pieces — not office polish.
 - Hackathon: comfy tees and casual shirts (event merch OK) — not formal dresses.
-- Clear single item ("a tee", "jeans") → status "ready"; search that item; do not over-ask.
+- Do NOT ask clarifying questions. Any shopping message (an item, an occasion, a vibe) → status "ready" immediately with your best-guess searchQuery. The shopper refines after seeing results.
+- Clear single item ("a dress", "a tee", "jeans") → search exactly that item.
 - Most expensive / premium / luxury / highest-priced item → status "ready" immediately. searchQueries MUST be ["expensive","premium","overcoat","most-expensive"]. Do NOT ask occasion first and do NOT swap to shirt/pants/poplin.
 - When ready: SHORT catalog nouns merchants would list (shirt, pants, jeans, dress, blouse…) — NOT the user's full sentence. For complementary looks: searchQuery like "shirt pants", searchQueries ["shirt","pants","jeans"]. Include jeans when hunting bottoms.
 - thoughts (required, 2–5 lines): first-person reasoning about THIS ask — what occasion/vibe you inferred and why those garment roles. Do NOT claim you already found products. Example kind: "Party → festive/casual; complementary top + bottoms makes sense."
@@ -80,13 +81,6 @@ function userTurnCount(messages: ChatMessage[]) {
 function lastUser(messages: ChatMessage[]) {
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i]?.role === "user") return messages[i]!.content;
-  }
-  return "";
-}
-
-function lastAssistant(messages: ChatMessage[]) {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i]?.role === "assistant") return messages[i]!.content;
   }
   return "";
 }
@@ -133,23 +127,33 @@ function normalizeQuestion(text: string) {
     .trim();
 }
 
-/** LLM often re-asks this even after the user named a tee/cap. */
-function isUselessClarify(text: string) {
-  const n = normalizeQuestion(text);
-  if (!n) return false;
-  return (
-    n.includes("type of apparel") ||
-    n.includes("kind of apparel") ||
-    n.includes("what apparel") ||
-    /\bwhat (?:are you|do you)\b.*\blooking for\b/.test(n) ||
-    /\bwhat type of\b/.test(n) ||
-    /\bwhat kind of\b/.test(n)
-  );
+const GARMENT_RE =
+  /\b(dress(?:es)?|gown|skirts?|jackets?|coats?|overcoats?|hoodies?|sweaters?|cardigans?|blazers?|shorts|sneakers?|shoes?|boots?|heels|sandals?|bags?|scarf|scarves|polos?|jumpsuits?|knitwear)\b/g;
+
+/** Garment nouns beyond tee/cap/pants, singularised for catalog search. */
+function namedGarments(text: string): string[] {
+  const t = normalizeFashionTypos(text);
+  const found = new Set<string>();
+  for (const m of t.matchAll(GARMENT_RE)) {
+    let noun = m[1]!;
+    if (noun === "dresses") noun = "dress";
+    else if (noun === "scarves") noun = "scarf";
+    else if (
+      noun !== "shorts" &&
+      noun !== "heels" &&
+      noun.endsWith("s") &&
+      !noun.endsWith("ss")
+    ) {
+      noun = noun.slice(0, -1);
+    }
+    found.add(noun);
+  }
+  return [...found].slice(0, 4);
 }
 
 function detectItem(
   text: string,
-): "tee" | "cap" | "compare" | "pants" | "outfit" | "unknown" {
+): "tee" | "cap" | "compare" | "pants" | "outfit" | "garment" | "unknown" {
   const t = normalizeFashionTypos(text).replace(/t\s+shirt/g, "tshirt");
   if (/\b(compare|vs|versus)\b/.test(t) && /\b(shirt|tee|cap|hat|tshirt)\b/.test(t)) {
     return "compare";
@@ -170,6 +174,7 @@ function detectItem(
   ) {
     return "outfit";
   }
+  if (namedGarments(t).length) return "garment";
   if (/\b(pants?|jeans|trousers?)\b/.test(t)) return "pants";
   if (/\b(cap|hat)\b/.test(t)) return "cap";
   if (/\b(t-?shirt|tshirt|tee|shirt|blouse)\b/.test(t)) return "tee";
@@ -279,7 +284,7 @@ function detectStyle(text: string): string | undefined {
 }
 
 const META_HELP_REPLY =
-  "You chat with me like a salesperson — tell me the occasion or piece you want, I clarify if needed, then I search live seller catalogs on Borneo. You pick what you like and pay in chat with Visa or USDT0 (nothing charges until you authorize). What are you looking to wear?";
+  "Tell me the piece or occasion and I'll search live seller catalogs on Borneo right away. You pick what you like and pay in chat with Visa or USDT0 (nothing charges until you authorize). What are you looking to wear?";
 
 const META_HELP_SUGGESTIONS = [
   "I want a t-shirt",
@@ -523,6 +528,12 @@ function catalogSearchFromProfile(
     style: style || profile?.style,
   };
 
+  // A named garment ("a dress for a party") beats the occasion's default set
+  if (item === "garment") {
+    const garments = namedGarments(corpus);
+    return { searchQuery: garments.join(" "), searchQueries: garments };
+  }
+
   // Occasion-shaped hunts always win over a stale tee/shirt list from the LLM
   if (
     isPremiumProfile(effective, style) ||
@@ -628,7 +639,9 @@ function enrichProfile(
               ? "shirt and pants"
               : item === "tee"
                 ? "tee"
-                : profile?.item;
+                : item === "garment"
+                  ? namedGarments(corpus).join(" and ")
+                  : profile?.item;
   }
   if (style && !wantsMostExpensive(corpus)) next.style = style;
   if (wantsMostExpensive(corpus)) {
@@ -676,10 +689,7 @@ export function ensureConversationProgress(
   messages: ChatMessage[],
   result: SalespersonResult,
 ): SalespersonResult {
-  const turns = userTurnCount(messages);
-  const corpus = intentText(messages);
   const latest = lastUser(messages);
-  const item = detectItem(corpus);
   // Re-enrich from latest intent window so mid-chat vibe switches stick
   const profile = enrichProfile(messages, {
     ...result.profile,
@@ -691,18 +701,6 @@ export function ensureConversationProgress(
         }
       : {}),
   });
-  const prevAsk = lastAssistant(messages);
-  const uselessNow = isUselessClarify(result.reply);
-  const repeated =
-    result.status === "clarifying" &&
-    Boolean(prevAsk) &&
-    (normalizeQuestion(result.reply) === normalizeQuestion(prevAsk) ||
-      (isUselessClarify(result.reply) && isUselessClarify(prevAsk)) ||
-      (normalizeQuestion(result.reply).includes("casual") &&
-        normalizeQuestion(result.reply).includes("formal") &&
-        normalizeQuestion(prevAsk).includes("casual") &&
-        normalizeQuestion(prevAsk).includes("formal")));
-
   // "how does this work" / bare hi — never jump to catalog search
   if (isMetaHelpAsk(latest)) {
     return {
@@ -865,32 +863,16 @@ export function ensureConversationProgress(
     };
   }
 
-  // Preserve clarifying when vibe/occasion is underspecified — don't forceReady into tee
-  if (
-    result.status === "clarifying" &&
-    item === "unknown" &&
-    turns <= 2 &&
-    !uselessNow &&
-    !wantsExplicitSet(corpus) &&
-    (result.llm !== "deterministic" ||
-      Boolean(profile.occasion) ||
-      Boolean(result.thoughts?.length) ||
-      isVagueOccasionAsk(latest) ||
-      Boolean(detectOccasion(corpus)))
-  ) {
-    return { ...result, profile };
-  }
-
-  // Named garment / explicit set → search
-  if (item !== "unknown") {
-    return forceReady();
-  }
-
-  if (repeated || turns >= 3 || uselessNow) {
-    return forceReady();
-  }
-
-  return { ...result, profile };
+  // Never interrogate the shopper: any shopping message searches immediately.
+  if (!latest.trim()) return { ...result, profile };
+  const searching = forceReady();
+  return {
+    ...searching,
+    reply:
+      result.status === "clarifying" || /\?\s*$/.test(searching.reply)
+        ? "I'll search seller catalogs on the Borneo network for that now."
+        : searching.reply,
+  };
 }
 
 function parseJsonResult(raw: string): SalespersonResult | null {
@@ -1536,7 +1518,7 @@ async function runOpenAI(
                 {
                   role: "system" as const,
                   content:
-                    "No garment noun yet — infer occasion/vibe from context. Prefer status clarifying with one short question (set vs piece / casual vs dressier). Do NOT default searchQuery to tee. thoughts must explain your inference. If ready, use complementary catalog nouns (shirt, pants, jeans, dress…).",
+                    "No garment noun yet — infer occasion/vibe from context and respond with status ready. Use complementary catalog nouns (shirt, pants, jeans, dress…), not tee alone. thoughts must explain your inference.",
                 },
               ]
             : []),
@@ -1605,7 +1587,7 @@ async function runBedrock(
       (isVagueOccasionAsk(lastUser(messages)) || Boolean(detectOccasion(corpus)));
     const forceReady =
       vagueVibe && turns <= 2
-        ? "\n\nNo garment noun yet — infer occasion/vibe from context. Prefer status clarifying with one short question (set vs piece / casual vs dressier). Do NOT default searchQuery to tee. thoughts must explain your inference."
+        ? "\n\nNo garment noun yet — infer occasion/vibe from context and respond with status ready. Use complementary catalog nouns, not tee alone. thoughts must explain your inference."
         : turns >= 2 && itemKnown
           ? "\n\nEnough context — respond with status ready and a searchQuery now. Do not ask another clarifying question. Include thoughts."
           : turns >= 3

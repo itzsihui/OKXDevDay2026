@@ -59,6 +59,10 @@ export const config = {
       process.env.BUYER_PRIVATE_KEY || process.env.XLAYER_BUYER_PRIVATE_KEY,
     );
   },
+  /** Gas-paying wallet that submits signed x402 authorizations when the facilitator does not. */
+  get relayerPrivateKey() {
+    return normalizePrivateKey(process.env.RELAYER_PRIVATE_KEY);
+  },
   /** @deprecated Alias — prefer buyerPrivateKey. */
   get buyerSeed() {
     return this.buyerPrivateKey;

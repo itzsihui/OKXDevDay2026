@@ -17,6 +17,7 @@ import {
   toAtomic,
 } from "@/lib/config";
 import type { Sku, StoreRecord } from "@/lib/store/types";
+import { hasRelayer, selfSettleEip3009 } from "@/lib/protocol/self-settle";
 
 export type { PaymentRequired, PaymentRequirements, PaymentPayload };
 
@@ -117,9 +118,10 @@ function facilitator() {
 async function confirmSettlement(
   client: OKXFacilitatorClient,
   txHash: string,
+  waitMs: number,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const rpc = createPublicClient({ transport: http(config.rpcUrl) });
-  const deadline = Date.now() + 25_000;
+  const deadline = Date.now() + waitMs;
   while (Date.now() < deadline) {
     try {
       const receipt = await rpc.getTransactionReceipt({
@@ -153,6 +155,18 @@ async function confirmSettlement(
   };
 }
 
+async function chainStalledReason(): Promise<string | null> {
+  try {
+    const rpc = createPublicClient({ transport: http(config.rpcUrl) });
+    const block = await rpc.getBlock();
+    const ageSec = Math.floor(Date.now() / 1000) - Number(block.timestamp);
+    if (ageSec < 120) return null;
+    return `X Layer (${config.network}) is not producing blocks: latest block ${block.number} is ${Math.round(ageSec / 60)} min old. No payment was taken; retry when the chain resumes.`;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Verify + settle a signed EVM payment via the OKX facilitator.
  */
@@ -180,27 +194,62 @@ export async function verifyAndSettle(args: {
       };
     }
 
-    const settled = await client.settle(payload, args.paymentRequirements);
-    if (!settled.success || !settled.transaction) {
+    const relayer = hasRelayer();
+    const settled = await client
+      .settle(payload, args.paymentRequirements)
+      .catch((error: unknown) => ({
+        success: false,
+        transaction: "",
+        payer: undefined,
+        errorReason: error instanceof Error ? error.message : "settle threw",
+        errorMessage: undefined,
+      }));
+
+    let facilitatorReason =
+      settled.errorReason || settled.errorMessage || "Facilitator settle failed";
+    if (settled.success && settled.transaction) {
+      const confirmed = await confirmSettlement(
+        client,
+        settled.transaction,
+        relayer ? 8_000 : 25_000,
+      );
+      if (confirmed.ok) {
+        return {
+          ok: true as const,
+          txHash: settled.transaction,
+          explorerUrl: explorerTx(settled.transaction),
+          payer: settled.payer || undefined,
+          settledBy: "okx-facilitator" as const,
+        };
+      }
+      facilitatorReason = confirmed.reason;
+    }
+
+    const stalled = await chainStalledReason();
+    if (stalled) return { ok: false as const, reason: stalled };
+
+    if (!relayer) {
+      return { ok: false as const, reason: facilitatorReason };
+    }
+
+    const self = await selfSettleEip3009({
+      payload,
+      asset: args.paymentRequirements.asset,
+      payTo: args.paymentRequirements.payTo,
+      amount: args.paymentRequirements.amount,
+    });
+    if (!self.ok) {
       return {
         ok: false as const,
-        reason:
-          settled.errorReason ||
-          settled.errorMessage ||
-          "Facilitator settle failed",
+        reason: `${facilitatorReason}. ${self.reason}`,
       };
     }
-
-    const confirmed = await confirmSettlement(client, settled.transaction);
-    if (!confirmed.ok) {
-      return { ok: false as const, reason: confirmed.reason };
-    }
-
     return {
       ok: true as const,
-      txHash: settled.transaction,
-      explorerUrl: explorerTx(settled.transaction),
-      payer: settled.payer || undefined,
+      txHash: self.txHash,
+      explorerUrl: explorerTx(self.txHash),
+      payer: verified.payer || undefined,
+      settledBy: "relayer" as const,
     };
   } catch (error) {
     const reason =
