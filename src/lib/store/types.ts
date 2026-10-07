@@ -47,7 +47,7 @@ export type Sku = {
   settleSymbol?: string;
   /** Structured fashion facets for catalog + search (optional). */
   attrs?: SkuAttrs;
-  /** Tokenized / RWA metadata for Build a Market track demos. */
+  /** Tokenized / RWA metadata for Build a Company track demos. */
   tokenization?: SkuTokenization;
 };
 

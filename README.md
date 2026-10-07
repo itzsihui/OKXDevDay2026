@@ -19,7 +19,7 @@ Landing → [http://localhost:3000](http://localhost:3000) · OKX docs map → [
 
 Users hold fragmented assets. Buying products, tokenized RWAs, or micro-payments usually means manual swaps and separate rails. Agent catalogs are often walled inside a few chat apps.
 
-## Borneo @ OKX Dev Day (Build a Market)
+## Borneo @ OKX Dev Day (Build a Company)
 
 **An AI-native shopping agent** takes natural-language intent, **routes liquidity on X Layer** into USDT0 via OKX DEX, **settles with x402**, and credits **XPoints** from a protocol micro-fee — so conversion is seamless *and* users earn rewards.
 
@@ -105,7 +105,7 @@ npx skills add okx/onchainos-skills --yes
 
 ## Submission checklist (OKX Dev Day)
 
-- [ ] Primary track: **Build a Market**
+- [ ] Primary track: **Build a Company**
 - [ ] Public repo + this README
 - [ ] Live product URL (https://okx-dev-day2026.vercel.app)
 - [ ] Demo video 2–4 min: intent → route → settle → earn XPoints (+ optional RWA SKU)

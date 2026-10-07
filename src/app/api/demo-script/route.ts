@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   log.push({
     phase: "pitch",
-    text: "Intent → route → settle → earn on X Layer (Build a Market)",
+    text: "Intent → route → settle → earn on X Layer (Build a Company)",
   });
   log.push({ phase: "merchant", text: merchantMessage });
   const merchant = await runMerchantAgent({ message: merchantMessage });

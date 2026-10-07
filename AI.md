@@ -6,7 +6,7 @@ Source of truth for this prototype. Landing copy, demo script, and product decis
 
 **Dials:** `DESIGN_VARIANCE: 6` · `MOTION_INTENSITY: 5` · `VISUAL_DENSITY: 4`
 
-**Primary track:** Build a Market
+**Primary track:** Build a Company
 
 ---
 

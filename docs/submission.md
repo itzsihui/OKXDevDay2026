@@ -2,14 +2,14 @@
 
 **Deadline:** 25 September 2026, 23:59 UTC  
 **Form:** https://forms.gle/81S2gnFCzqSoeDEA7  
-**Track:** Build a Market (primary)  
+**Track:** Build a Company (primary)  
 **Builder kit:** https://www.okx.com/en-sg/learn/okx-dev-day-builder-kit
 
 ## What to submit
 
 | Item | Notes |
 |------|--------|
-| Team + track | Build a Market; Remote or Singapore as chosen |
+| Team + track | Build a Company; Remote or Singapore as chosen |
 | Project summary | Intent → route → settle → earn on X Layer |
 | Repository | This repo (public) + README contract table |
 | Demo video | 2–4 minutes (shot list below) |
